@@ -21,17 +21,20 @@ class ModernSpotifyDownloader(ctk.CTk):
         
         # Window size and position
         window_width = 700
-        window_height = 550
+        window_height = 600
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         center_x = int(screen_width/2 - window_width/2)
         center_y = int(screen_height/2 - window_height/2)
         self.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
-        self.minsize(600, 550)
+        self.minsize(600, 600)
         
         # Initialize download path
         self.download_path = os.path.abspath("./downloads")
         Path(self.download_path).mkdir(exist_ok=True)
+        
+        # Initialize FFmpeg path
+        self.ffmpeg_path = None
         
         # Track playlist and download stats
         self.total_songs = 0
@@ -131,7 +134,7 @@ class ModernSpotifyDownloader(ctk.CTk):
             fg_color=("gray90", "gray17"),
             corner_radius=15
         )
-        self.location_frame.grid(row=1, column=0, sticky="ew")
+        self.location_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
         self.location_frame.grid_columnconfigure(1, weight=1)
         
         self.folder_icon = ctk.CTkLabel(
@@ -142,27 +145,65 @@ class ModernSpotifyDownloader(ctk.CTk):
         )
         self.folder_icon.grid(row=0, column=0, padx=(15, 5), pady=12)
         
-        self.location_label = ctk.CTkLabel(
+        self.location_entry = ctk.CTkEntry(
             self.location_frame,
-            text=self.download_path,
+            placeholder_text="Download location (default: ./downloads)",
             font=ctk.CTkFont(family="Segoe UI", size=13),
-            anchor="w"
+            height=38,
+            border_width=0,
+            fg_color="transparent"
         )
-        self.location_label.grid(row=0, column=1, padx=(5, 5), sticky="ew")
+        self.location_entry.grid(row=0, column=1, padx=(5, 5), sticky="ew")
+        self.location_entry.insert(0, self.download_path)
         
         self.browse_button = ctk.CTkButton(
             self.location_frame,
-            text="Choose Folder",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
+            text="Browse",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            width=70,
             height=30,
-            width=100,
             corner_radius=8,
-            command=self.choose_folder,
-            fg_color=("gray80", "gray25"),
-            hover_color=("gray70", "gray30"),
-            text_color=("gray20", "gray90")
+            command=self.browse_location
         )
-        self.browse_button.grid(row=0, column=2, padx=10)
+        self.browse_button.grid(row=0, column=2, padx=(5, 15))
+        
+        # FFmpeg path frame
+        self.ffmpeg_frame = ctk.CTkFrame(
+            self.input_section,
+            fg_color=("gray90", "gray17"),
+            corner_radius=15
+        )
+        self.ffmpeg_frame.grid(row=2, column=0, sticky="ew")
+        self.ffmpeg_frame.grid_columnconfigure(1, weight=1)
+        
+        self.ffmpeg_icon = ctk.CTkLabel(
+            self.ffmpeg_frame,
+            text="🎬",
+            font=ctk.CTkFont(size=18),
+            width=20
+        )
+        self.ffmpeg_icon.grid(row=0, column=0, padx=(15, 5), pady=12)
+        
+        self.ffmpeg_entry = ctk.CTkEntry(
+            self.ffmpeg_frame,
+            placeholder_text="FFmpeg path (optional, auto-detected if installed)",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=38,
+            border_width=0,
+            fg_color="transparent"
+        )
+        self.ffmpeg_entry.grid(row=0, column=1, padx=(5, 5), sticky="ew")
+        
+        self.ffmpeg_browse_button = ctk.CTkButton(
+            self.ffmpeg_frame,
+            text="Browse",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            width=70,
+            height=30,
+            corner_radius=8,
+            command=self.browse_ffmpeg
+        )
+        self.ffmpeg_browse_button.grid(row=0, column=2, padx=(5, 15))
         
         # Download button
         self.download_button = ctk.CTkButton(
@@ -287,15 +328,8 @@ class ModernSpotifyDownloader(ctk.CTk):
         Path("./downloads").mkdir(exist_ok=True)
         
     def choose_folder(self):
-        path = filedialog.askdirectory(
-            title="Choose Download Location",
-            initialdir=self.download_path
-        )
-        if path:
-            self.download_path = path
-            self.location_label.configure(text=path)
-            self.downloads_label.configure(text=f" {path}")
-            Path(path).mkdir(exist_ok=True)
+        """Legacy method, redirects to browse_location"""
+        self.browse_location()
     
     def extract_playlist_id(self, url):
         pattern = r'playlist/([a-zA-Z0-9]+)'
@@ -358,6 +392,13 @@ class ModernSpotifyDownloader(ctk.CTk):
             messagebox.showerror("Error", "Please enter a playlist URL")
             return
         
+        # Update download path from entry field
+        if hasattr(self, 'location_entry'):
+            path = self.location_entry.get().strip()
+            if path:
+                self.download_path = path
+                Path(path).mkdir(exist_ok=True)
+        
         self.download_button.configure(
             state="disabled",
             text="Downloading... ",
@@ -385,6 +426,13 @@ class ModernSpotifyDownloader(ctk.CTk):
             
             import main
             main.DOWNLOAD_PATH = self.download_path
+            
+            # Set FFmpeg path if provided
+            if hasattr(self, 'ffmpeg_entry') and self.ffmpeg_entry.get().strip():
+                ffmpeg_path = self.ffmpeg_entry.get().strip()
+                if os.path.isfile(ffmpeg_path):
+                    main.FFMPEG_PATH = ffmpeg_path
+                    print(f"Using custom FFmpeg path: {ffmpeg_path}")
             
             playlist_id = self.extract_playlist_id(url)
             
@@ -485,6 +533,30 @@ class ModernSpotifyDownloader(ctk.CTk):
         # Exit application with force
         import os
         os._exit(0)  # More forceful exit than sys.exit()
+
+    def browse_location(self):
+        path = filedialog.askdirectory(
+            title="Choose Download Location",
+            initialdir=self.download_path
+        )
+        if path:
+            self.download_path = path
+            self.location_entry.delete(0, 'end')
+            self.location_entry.insert(0, path)
+            # Update the downloads label in the status section
+            if hasattr(self, 'downloads_label'):
+                self.downloads_label.configure(text=f" {path}")
+            Path(path).mkdir(exist_ok=True)
+
+    def browse_ffmpeg(self):
+        path = filedialog.askopenfilename(
+            title="Choose FFmpeg Executable",
+            filetypes=[("Executable files", "*.exe")]
+        )
+        if path:
+            self.ffmpeg_path = path
+            self.ffmpeg_entry.delete(0, 'end')
+            self.ffmpeg_entry.insert(0, path)
 
 def resource_path(relative_path):
     try:

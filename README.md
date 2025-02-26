@@ -56,6 +56,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+4. Verify installation:
+```sh
+# Check if all dependencies are installed correctly
+python -c "import customtkinter, yt_dlp, requests; print('Dependencies successfully installed!')"
+```
+
 ### Installing FFmpeg (Required for M4A conversion)
 
 **Windows:**
@@ -64,6 +70,7 @@ pip install -r requirements.txt
 3. Add the `bin` folder to your system PATH:
    - Right-click on "This PC" or "My Computer" > Properties > Advanced System Settings > Environment Variables
    - Edit the "Path" variable and add the path to the bin folder (e.g., `C:\ffmpeg\bin`)
+   - Click OK to save changes
 4. Restart any open command prompts or applications
 5. Verify installation by opening a new command prompt and typing: `ffmpeg -version`
 
@@ -75,16 +82,29 @@ pip install -r requirements.txt
 
 **macOS:**
 ```sh
+# Install using Homebrew
 brew install ffmpeg
+
+# Verify installation
+ffmpeg -version
 ```
 
 **Linux:**
 ```sh
-sudo apt update && sudo apt install ffmpeg  # For Debian/Ubuntu
-sudo dnf install ffmpeg                     # For Fedora
+# For Debian/Ubuntu
+sudo apt update && sudo apt install ffmpeg
+
+# For Fedora
+sudo dnf install ffmpeg
+
+# For Arch Linux
+sudo pacman -S ffmpeg
+
+# Verify installation
+ffmpeg -version
 ```
 
-> **Note:** If FFmpeg is not installed, the application will still download audio files but will skip the conversion to M4A format and leave them as webm files.
+> **Note:** If FFmpeg is not installed, the application will still download audio files but will skip the conversion to M4A format and leave them as webm files. The GUI now allows you to specify a custom FFmpeg path if automatic detection fails.
 
 ## Usage
 
@@ -145,4 +165,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 7. Open a Pull Request
 
 ## License
-This software is licensed under the [MIT License](https://github.com/invzfnc/spotify-downloader/blob/main/LICENSE) © [Cha](https://github.com/invzfnc)
+This software is licensed under the [MIT License](https://github.com/invzfnc/spotify-downloader/blob/main/LICENSE)  [Cha](https://github.com/invzfnc)

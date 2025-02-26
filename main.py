@@ -8,9 +8,13 @@ from yt_dlp import YoutubeDL
 
 from time import sleep
 from random import uniform
+import os
+import sys
     
+# Global variables
 DOWNLOAD_PATH = "./downloads/" # ends with "/"
 client = None
+FFMPEG_PATH = None  # Will store custom FFmpeg path if provided
 
 
 class PlaylistInfo(TypedDict):
@@ -208,56 +212,96 @@ def download_from_urls(urls: List[SongData], progress_callback: Optional[callabl
     
     # Check if ffmpeg is available
     ffmpeg_found = False
-    try:
-        import subprocess
-        import shutil
-        
-        # First check if ffmpeg is in PATH
-        ffmpeg_in_path = shutil.which("ffmpeg") is not None
-        
-        if ffmpeg_in_path:
-            ffmpeg_found = True
-        else:
-            # Secondary check using platform-specific commands
-            if platform.system() == "Windows":
-                # Try multiple common installation locations on Windows
-                common_paths = [
-                    os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "ffmpeg", "bin", "ffmpeg.exe"),
-                    os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "ffmpeg", "bin", "ffmpeg.exe"),
-                    os.path.join(os.environ.get("USERPROFILE", "C:\\Users\\User"), "ffmpeg", "bin", "ffmpeg.exe"),
-                    # Add the current directory and its subdirectories
-                    os.path.join(os.getcwd(), "ffmpeg", "bin", "ffmpeg.exe"),
-                    os.path.join(os.getcwd(), "ffmpeg.exe"),
-                ]
-                
-                for path in common_paths:
-                    if os.path.isfile(path):
-                        ffmpeg_found = True
-                        break
-                        
-                # Last resort: try the where command
-                if not ffmpeg_found:
-                    result = subprocess.run(["where", "ffmpeg"], capture_output=True, text=True)
-                    ffmpeg_found = "ffmpeg" in result.stdout.lower()
-            else:  # Linux/Mac
-                result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
-                ffmpeg_found = bool(result.stdout.strip())
-    except Exception as e:
-        print(f"Error checking for FFmpeg: {str(e)}")
-        ffmpeg_found = False
-        
+    ffmpeg_path = None
+    
+    # First check if a custom path was provided
+    global FFMPEG_PATH
+    if FFMPEG_PATH and os.path.isfile(FFMPEG_PATH):
+        ffmpeg_found = True
+        ffmpeg_path = FFMPEG_PATH
+        if progress_callback:
+            progress_callback(
+                f"Using custom FFmpeg path: {FFMPEG_PATH}", 
+                10,
+                download_stats
+            )
+    else:
+        try:
+            import subprocess
+            import shutil
+            
+            # First check if ffmpeg is in PATH
+            ffmpeg_in_path = shutil.which("ffmpeg")
+            if ffmpeg_in_path:
+                ffmpeg_found = True
+                ffmpeg_path = ffmpeg_in_path
+            else:
+                # Secondary check using platform-specific commands
+                if platform.system() == "Windows":
+                    # Try multiple common installation locations on Windows
+                    common_paths = [
+                        os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "ffmpeg", "bin", "ffmpeg.exe"),
+                        os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "ffmpeg", "bin", "ffmpeg.exe"),
+                        os.path.join(os.environ.get("USERPROFILE", "C:\\Users\\User"), "ffmpeg", "bin", "ffmpeg.exe"),
+                        # Add the current directory and its subdirectories
+                        os.path.join(os.getcwd(), "ffmpeg", "bin", "ffmpeg.exe"),
+                        os.path.join(os.getcwd(), "ffmpeg.exe"),
+                        # Add the directory where the script is located
+                        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg.exe"),
+                        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg", "bin", "ffmpeg.exe"),
+                    ]
+                    
+                    for path in common_paths:
+                        if os.path.isfile(path):
+                            ffmpeg_found = True
+                            ffmpeg_path = path
+                            # Set the global path for future use
+                            FFMPEG_PATH = path
+                            break
+                            
+                    # Last resort: try the where command
+                    if not ffmpeg_found:
+                        try:
+                            result = subprocess.run(["where", "ffmpeg"], capture_output=True, text=True)
+                            if "ffmpeg" in result.stdout.lower():
+                                ffmpeg_path = result.stdout.strip().split('\n')[0]
+                                ffmpeg_found = os.path.isfile(ffmpeg_path)
+                                if ffmpeg_found:
+                                    FFMPEG_PATH = ffmpeg_path
+                        except Exception:
+                            pass
+                else:  # Linux/Mac
+                    try:
+                        result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
+                        if result.stdout.strip():
+                            ffmpeg_path = result.stdout.strip()
+                            ffmpeg_found = os.path.isfile(ffmpeg_path)
+                            if ffmpeg_found:
+                                FFMPEG_PATH = ffmpeg_path
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"Error checking for FFmpeg: {str(e)}")
+            ffmpeg_found = False
+            
     if not ffmpeg_found and progress_callback:
         progress_callback(
-            "Warning: FFmpeg not found - audio conversion will be skipped. Please install FFmpeg for best quality.", 
+            "Warning: FFmpeg not found - audio conversion will be skipped. Please install FFmpeg for best quality or place ffmpeg.exe in the application directory.", 
             10,
             download_stats
         )
     elif ffmpeg_found and progress_callback:
         progress_callback(
-            "FFmpeg detected - audio conversion enabled for high quality output.", 
+            f"FFmpeg detected at: {ffmpeg_path} - audio conversion enabled for high quality output.", 
             10,
             download_stats
         )
+        
+    # If FFmpeg was found, add it to the PATH environment variable temporarily
+    if ffmpeg_found and ffmpeg_path:
+        ffmpeg_dir = os.path.dirname(ffmpeg_path)
+        if ffmpeg_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
     
     class ProgressHook:
         def __init__(self, callback: callable, song_info: SongData, current_idx: int, total_songs: int):
@@ -438,7 +482,7 @@ def download_from_urls(urls: List[SongData], progress_callback: Optional[callabl
     # Return download stats for reporting
     return download_stats
 
-def main(playlist_id: str, progress_callback: Optional[callable] = None, concurrent_searches: int = 3, concurrent_downloads: int = 3) -> DownloadStats:
+def main(playlist_id: str, progress_callback: Optional[callable] = None, concurrent_searches: int = 3, concurrent_downloads: int = 3, ffmpeg_path: Optional[str] = None) -> DownloadStats:
     """Main function to handle the playlist download workflow
     
     Args:
@@ -446,10 +490,16 @@ def main(playlist_id: str, progress_callback: Optional[callable] = None, concurr
         progress_callback: Optional callback function for progress updates
         concurrent_searches: Number of concurrent song searches (default: 3)
         concurrent_downloads: Number of concurrent downloads (default: 3)
+        ffmpeg_path: Optional path to FFmpeg executable
     
     Returns:
         Download statistics dictionary
     """
+    # Set custom FFmpeg path if provided
+    global FFMPEG_PATH
+    if ffmpeg_path and os.path.isfile(ffmpeg_path):
+        FFMPEG_PATH = ffmpeg_path
+        
     # Extract playlist info
     playlist_info = get_playlist_info(playlist_id)
     
