@@ -68,53 +68,59 @@ def convert_to_milliseconds(text: str) -> int:
     return (int(minutes) * 60 + int(seconds)) * 1000
     
 def get_song_url(song_info: PlaylistInfo, client: Optional[InnerTube] = None) -> Tuple[Optional[str], Optional[str]]:
-    """Simulates searching from the YTMusic web and returns url to closest match."""
+    """Simulates searching from the YTMusic web and returns url to closest match based on song length."""
 
     if client is None:
         client = InnerTube("WEB_REMIX", "1.20250203.01.00")
     data = client.search(f"{song_info['title']} {song_info['artist']}")
 
     try:
-        contents = data.get("contents", {}).get("tabbedSearchResultsRenderer", {}).get("tabs", [{}])[0].get("tabRenderer", {}).get("content", {}).get("sectionListRenderer", {}).get("contents", [])
-        
-        if not contents:
-            raise ValueError("No search results found")
-            
-        # Find the first music item
-        music_item = None
-        video_id = None
-        video_title = None
-        
-        for item in contents:
-            # Check for musicCardShelfRenderer (top result)
-            if "musicCardShelfRenderer" in item:
-                renderer = item["musicCardShelfRenderer"]
-                if "title" in renderer and "runs" in renderer["title"]:
-                    run = renderer["title"]["runs"][0]
-                    if "navigationEndpoint" in run and "watchEndpoint" in run["navigationEndpoint"]:
-                        video_id = run["navigationEndpoint"]["watchEndpoint"]["videoId"]
-                        video_title = run["text"]
-                        break
-                        
-            # Check for musicShelfRenderer (list results)
-            elif "musicShelfRenderer" in item:
-                renderer = item["musicShelfRenderer"]
-                if "contents" in renderer and len(renderer["contents"]) > 0:
-                    first_item = renderer["contents"][0].get("musicResponsiveListItemRenderer", {})
-                    for column in first_item.get("flexColumns", []):
-                        col_renderer = column.get("musicResponsiveListItemFlexColumnRenderer", {})
-                        if "navigationEndpoint" in str(col_renderer):  # Quick way to check if this column has the video info
-                            for text in col_renderer.get("text", {}).get("runs", []):
-                                if "navigationEndpoint" in text and "watchEndpoint" in text["navigationEndpoint"]:
-                                    video_id = text["navigationEndpoint"]["watchEndpoint"]["videoId"]
-                                    video_title = text["text"]
-                                    break
-                            if video_id:
-                                break
-                if video_id:
-                    break
+        # Handle "did you mean" case
+        if "itemSectionRenderer" in data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]:
+            del data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]
 
-        if not video_id:
+        # Extract top result length and video info
+        try:
+            top_result_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["subtitle"]["runs"][-1]["text"]
+            top_result_video_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["navigationEndpoint"]["watchEndpoint"]["videoId"]
+            top_result_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["text"]
+        except (KeyError, IndexError):
+            top_result_length = None
+            top_result_video_id = None
+            top_result_title = None
+
+        # Extract first song result length and video info
+        try:
+            first_song_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][1]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][-1]["text"]
+            first_song_video_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["overlay"]["musicItemThumbnailOverlayRenderer"]["content"]["musicPlayButtonRenderer"]["playNavigationEndpoint"]["watchEndpoint"]["videoId"]
+            first_song_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][0]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][0]["text"]
+        except (KeyError, IndexError):
+            first_song_length = None
+            first_song_video_id = None
+            first_song_title = None
+
+        # Compare song lengths to find the best match
+        if top_result_length and first_song_length and top_result_video_id and first_song_video_id:
+            top_result_diff = abs(convert_to_milliseconds(top_result_length) - song_info["length"])
+            first_song_diff = abs(convert_to_milliseconds(first_song_length) - song_info["length"])
+            
+            if top_result_diff < first_song_diff:
+                # Top result is a better match
+                video_id = top_result_video_id
+                video_title = top_result_title
+            else:
+                # First song is a better match
+                video_id = first_song_video_id
+                video_title = first_song_title
+        elif top_result_video_id:
+            # Only top result available
+            video_id = top_result_video_id
+            video_title = top_result_title
+        elif first_song_video_id:
+            # Only first song available
+            video_id = first_song_video_id
+            video_title = first_song_title
+        else:
             raise ValueError("Could not find video ID in search results")
 
         url = f"https://music.youtube.com/watch?v={video_id}"
@@ -155,7 +161,18 @@ def get_song_urls(playlist_info: List[PlaylistInfo], progress_callback: Optional
             completed_count += 1
             
             if result[0]:  # Only add if we got a valid URL
-                urls.append({"url": result[0], "title": result[1], "original_title": song_info['title'], "artist": song_info['artist']})
+                # Ensure we're using YouTube Music URL
+                url = result[0]
+                if not url.startswith("https://music.youtube.com"):
+                    url = url.replace("https://www.youtube.com", "https://music.youtube.com")
+                
+                urls.append({
+                    "url": url, 
+                    "title": result[1], 
+                    "original_title": song_info['title'], 
+                    "artist": song_info['artist']
+                })
+                
                 if progress_callback:
                     progress_callback(f"Found: {result[1]} ({index}/{total_songs})", 
                                      20 + (completed_count / total_songs) * 20)
@@ -424,7 +441,11 @@ def download_from_urls(urls: List[SongData], progress_callback: Optional[callabl
                 "outtmpl": {"default": f"{current_download_path}%(title)s.%(ext)s"},
                 "postprocessors": [],  # Will be populated conditionally below
                 "quiet": False,  # Make yt-dlp show output
-                "no_warnings": False  # Show warnings
+                "no_warnings": False,  # Show warnings
+                "retries": 10,
+                "writethumbnail": True,
+                "noplaylist": True,
+                "extractor_args": {"youtubetab": {"approximate_date": "0"}}
             }
             
             # Only add postprocessors if ffmpeg is available
@@ -441,14 +462,23 @@ def download_from_urls(urls: List[SongData], progress_callback: Optional[callabl
                         "add_infojson": 'if_exists',
                         "add_metadata": True,
                         "key": "FFmpegMetadata"
+                    },
+                    {
+                        "key": "EmbedThumbnail",
+                        "already_have_thumbnail": False
                     }
                 ]
             
             if progress_callback:
                 options["progress_hooks"] = [ProgressHook(progress_callback, song_data, idx, total)]
             
+            # Ensure the URL is a YouTube Music URL
+            url = song_data["url"]
+            if not url.startswith("https://music.youtube.com"):
+                url = url.replace("https://www.youtube.com", "https://music.youtube.com")
+            
             with YoutubeDL(options) as ydl:
-                ydl.download([song_data["url"]])
+                ydl.download([url])
             return True
         except Exception as e:
             print(f"Error downloading {song_data.get('title', 'Unknown')}: {str(e)}")
