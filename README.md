@@ -28,11 +28,11 @@ This program uses YouTube Music as the source for music downloads, there is a ch
 ## Dependencies
 Unlike most downloaders, this program does not require a Spotify Developers account. However, you should have these libraries installed: 
 
-- [innertube](https://github.com/tombulled/innertube)
-- [SpotAPI](https://github.com/Aran404/SpotAPI)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- [customtkinter](https://github.com/TomSchimansky/CustomTkinter)
-- [FFmpeg](https://www.ffmpeg.org/) (Required for audio conversion to m4a format)
+- [innertube](https://github.com/tombulled/innertube): For YouTube Music API access
+- [SpotAPI](https://github.com/Aran404/SpotAPI): For Spotify playlist data extraction
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): For downloading high-quality audio
+- [customtkinter](https://github.com/TomSchimansky/CustomTkinter): For the modern GUI
+- [FFmpeg](https://www.ffmpeg.org/): Required for audio conversion to m4a format
 
 ### Installation
 
@@ -42,7 +42,16 @@ git clone https://github.com/invzfnc/spotify-downloader.git
 cd spotify-downloader
 ```
 
-2. Install Python dependencies:
+2. Create a virtual environment (recommended):
+```sh
+python -m venv .venv
+# On Windows
+.venv\Scripts\activate
+# On macOS/Linux
+source .venv/bin/activate
+```
+
+3. Install Python dependencies:
 ```sh
 pip install -r requirements.txt
 ```
@@ -87,16 +96,35 @@ This launches the graphical interface where you can:
 python -m cli <playlist_url>
 ```
 
+You can also use additional command line options:
+```sh
+python -m cli --help
+```
+
+This will show all available options:
+- `-o, --output-dir`: Specify output directory (default: ./downloads/)
+- `-c, --concurrent-searches`: Number of concurrent song searches (default: 3)
+- `-d, --concurrent-downloads`: Number of concurrent downloads (default: 3)
+
 ## Performance Tips
 - For best performance, ensure you have a stable internet connection
 - The application supports parallel downloads, which works best with a good connection
 - FFmpeg is required for M4A conversion; without it, files will remain in webm format
 - Higher quality downloads require more bandwidth and disk space
+- Increasing concurrent searches and downloads can improve speed on faster connections
 
 ## Troubleshooting
 - **FFmpeg Errors**: Install FFmpeg as described above
 - **Download Issues**: Check your internet connection and try again
 - **Application Not Closing**: The application now properly closes when the window is closed
+- **Missing Songs**: Some songs might not be found on YouTube Music; try downloading the playlist again
+- **Slow Downloads**: Reduce the number of concurrent downloads or check your internet connection
+- **Audio Quality Issues**: Make sure FFmpeg is properly installed for high-quality m4a conversion
+
+## Known Limitations
+- Some region-restricted songs may not be found
+- Very new releases might not be available on YouTube Music
+- Song matching is based on title and artist, so there might be occasional mismatches
 
 ## License
 This software is licensed under the [MIT License](https://github.com/invzfnc/spotify-downloader/blob/main/LICENSE) © [Cha](https://github.com/invzfnc)
