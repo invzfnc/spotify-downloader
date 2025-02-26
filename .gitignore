@@ -1,5 +1,7 @@
 __pycache__/
 venv/
 
+.mypy_cache/
+
 downloads/
 ignore/

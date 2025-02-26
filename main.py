@@ -1,16 +1,46 @@
+from typing import TypedDict, List, Tuple, Dict, Optional, Any, Set
+import concurrent.futures
+from threading import Lock
+
 from spotapi import Public
 from innertube import InnerTube
 from yt_dlp import YoutubeDL
 
 from time import sleep
 from random import uniform
-import concurrent.futures
-from threading import Lock
     
 DOWNLOAD_PATH = "./downloads/" # ends with "/"
 client = None
 
-def get_playlist_info(playlist_id):
+
+class PlaylistInfo(TypedDict):
+    """TypedDict for structured playlist information"""
+    title: str
+    artist: str
+    length: int
+
+
+class SongData(TypedDict):
+    """TypedDict for structured song data"""
+    url: str
+    title: str
+    original_title: str
+    artist: str
+
+
+class DownloadStats(TypedDict):
+    """TypedDict for structured download statistics"""
+    start_time: float
+    total_bytes: int
+    downloaded_bytes: int
+    current_speed: float
+    successful: List[SongData]
+    failed: List[SongData]
+    in_progress: Set[str]
+    completed: int
+
+
+def get_playlist_info(playlist_id: str) -> List[PlaylistInfo]:
     """Extracts data from Spotify and return them in format
        `[{"title": title, "artist": artist, "length": length}]`."""
 
@@ -28,12 +58,12 @@ def get_playlist_info(playlist_id):
 
     return result
 
-def convert_to_milliseconds(text):
+def convert_to_milliseconds(text: str) -> int:
     """Converts `"%M:%S"` timestamp from YTMusic to milliseconds."""
     minutes, seconds = text.split(":")
     return (int(minutes) * 60 + int(seconds)) * 1000
     
-def get_song_url(song_info, client=None):
+def get_song_url(song_info: PlaylistInfo, client: Optional[InnerTube] = None) -> Tuple[Optional[str], Optional[str]]:
     """Simulates searching from the YTMusic web and returns url to closest match."""
 
     if client is None:
@@ -91,7 +121,7 @@ def get_song_url(song_info, client=None):
         # Return a tuple to maintain compatibility
         return None, None
 
-def get_song_urls(playlist_info, progress_callback=None, concurrent_searches=3):
+def get_song_urls(playlist_info: List[PlaylistInfo], progress_callback: Optional[callable] = None, concurrent_searches: int = 3) -> List[SongData]:
     """Searches for songs in playlist concurrently and returns list of results."""
     urls = []
     client = InnerTube("WEB_REMIX", "1.20250203.01.00")
@@ -101,7 +131,7 @@ def get_song_urls(playlist_info, progress_callback=None, concurrent_searches=3):
     progress_lock = Lock()
     completed_count = 0
     
-    def search_song(index, song_info):
+    def search_song(index: int, song_info: PlaylistInfo) -> bool:
         nonlocal completed_count
         
         # Update progress at start of search
@@ -153,7 +183,7 @@ def get_song_urls(playlist_info, progress_callback=None, concurrent_searches=3):
     
     return urls
 
-def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
+def download_from_urls(urls: List[SongData], progress_callback: Optional[callable] = None, concurrent_downloads: int = 3) -> DownloadStats:
     """Downloads list of songs with yt-dlp with concurrent downloads support"""
     
     import concurrent.futures
@@ -164,7 +194,7 @@ def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
     from pathlib import Path
     
     # Track overall download stats
-    download_stats = {
+    download_stats: DownloadStats = {
         "start_time": time.time(),
         "total_bytes": 0,
         "downloaded_bytes": 0,
@@ -197,7 +227,7 @@ def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
         )
     
     class ProgressHook:
-        def __init__(self, callback, song_info, current_idx, total_songs):
+        def __init__(self, callback: callable, song_info: SongData, current_idx: int, total_songs: int):
             self.callback = callback
             self.current_title = ""
             self.song_info = song_info
@@ -207,7 +237,7 @@ def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
             self.last_time = time.time()
             self.error_reported = False
             
-        def __call__(self, d):
+        def __call__(self, d: Dict[str, Any]):
             with stats_lock:
                 if d['status'] == 'downloading':
                     # Get title if not set
@@ -302,7 +332,7 @@ def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
                                 download_stats
                             )
     
-    def download_song(song_data, idx, total):
+    def download_song(song_data: SongData, idx: int, total: int) -> bool:
         try:
             # Get the current download path from the global variable
             current_download_path = DOWNLOAD_PATH
@@ -375,7 +405,7 @@ def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
     # Return download stats for reporting
     return download_stats
 
-def main(playlist_id, progress_callback=None, concurrent_searches=3, concurrent_downloads=3):
+def main(playlist_id: str, progress_callback: Optional[callable] = None, concurrent_searches: int = 3, concurrent_downloads: int = 3) -> DownloadStats:
     """Main function to handle the playlist download workflow
     
     Args:
@@ -411,7 +441,7 @@ def main(playlist_id, progress_callback=None, concurrent_searches=3, concurrent_
 if __name__ == "__main__":
     import sys
 
-    def progress_callback(message, progress, stats=None):
+    def progress_callback(message: str, progress: float, stats: Optional[DownloadStats] = None):
         """Simple command-line progress callback for testing"""
         print(f"{progress:.1f}% - {message}")
     
