@@ -19,6 +19,7 @@ A modern, user-friendly application to download songs from your Spotify playlist
   - Detailed success/failure reporting
 - **Embedded Metadata**: Includes song title, artist, and more in audio files
 - **Flexible Download Location**: Choose where to save your music
+- **Custom FFmpeg Path**: Specify a custom FFmpeg executable path if auto-detection fails
 
 ## Warning
 This program uses YouTube Music as the source for music downloads, there is a chance of mismatching.
@@ -116,7 +117,8 @@ python gui.py
 This launches the graphical interface where you can:
 1. Paste your Spotify playlist URL
 2. Choose a download folder
-3. Click "Download Playlist" to start
+3. Optionally specify a custom FFmpeg path if auto-detection fails
+4. Click "Download Playlist" to start
 
 ### Command Line Mode
 ```sh
