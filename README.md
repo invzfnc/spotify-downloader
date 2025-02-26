@@ -64,7 +64,14 @@ pip install -r requirements.txt
 3. Add the `bin` folder to your system PATH:
    - Right-click on "This PC" or "My Computer" > Properties > Advanced System Settings > Environment Variables
    - Edit the "Path" variable and add the path to the bin folder (e.g., `C:\ffmpeg\bin`)
-4. Restart any open command prompts
+4. Restart any open command prompts or applications
+5. Verify installation by opening a new command prompt and typing: `ffmpeg -version`
+
+**Alternative Windows Installation (Simplified):**
+1. Download the FFmpeg executable from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip)
+2. Extract the zip file
+3. Copy `ffmpeg.exe` from the `bin` folder directly to the spotify-downloader folder
+4. No PATH configuration needed - the application will find it automatically
 
 **macOS:**
 ```sh

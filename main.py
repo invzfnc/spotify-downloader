@@ -210,18 +210,51 @@ def download_from_urls(urls: List[SongData], progress_callback: Optional[callabl
     ffmpeg_found = False
     try:
         import subprocess
-        if platform.system() == "Windows":
-            result = subprocess.run(["where", "ffmpeg"], capture_output=True, text=True)
-            ffmpeg_found = "ffmpeg" in result.stdout.lower()
-        else:  # Linux/Mac
-            result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
-            ffmpeg_found = bool(result.stdout.strip())
-    except Exception:
+        import shutil
+        
+        # First check if ffmpeg is in PATH
+        ffmpeg_in_path = shutil.which("ffmpeg") is not None
+        
+        if ffmpeg_in_path:
+            ffmpeg_found = True
+        else:
+            # Secondary check using platform-specific commands
+            if platform.system() == "Windows":
+                # Try multiple common installation locations on Windows
+                common_paths = [
+                    os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "ffmpeg", "bin", "ffmpeg.exe"),
+                    os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "ffmpeg", "bin", "ffmpeg.exe"),
+                    os.path.join(os.environ.get("USERPROFILE", "C:\\Users\\User"), "ffmpeg", "bin", "ffmpeg.exe"),
+                    # Add the current directory and its subdirectories
+                    os.path.join(os.getcwd(), "ffmpeg", "bin", "ffmpeg.exe"),
+                    os.path.join(os.getcwd(), "ffmpeg.exe"),
+                ]
+                
+                for path in common_paths:
+                    if os.path.isfile(path):
+                        ffmpeg_found = True
+                        break
+                        
+                # Last resort: try the where command
+                if not ffmpeg_found:
+                    result = subprocess.run(["where", "ffmpeg"], capture_output=True, text=True)
+                    ffmpeg_found = "ffmpeg" in result.stdout.lower()
+            else:  # Linux/Mac
+                result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
+                ffmpeg_found = bool(result.stdout.strip())
+    except Exception as e:
+        print(f"Error checking for FFmpeg: {str(e)}")
         ffmpeg_found = False
         
     if not ffmpeg_found and progress_callback:
         progress_callback(
-            "Warning: FFmpeg not found - audio conversion will be skipped", 
+            "Warning: FFmpeg not found - audio conversion will be skipped. Please install FFmpeg for best quality.", 
+            10,
+            download_stats
+        )
+    elif ffmpeg_found and progress_callback:
+        progress_callback(
+            "FFmpeg detected - audio conversion enabled for high quality output.", 
             10,
             download_stats
         )
