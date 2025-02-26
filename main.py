@@ -1,7 +1,13 @@
-from typing import Optional
+from typing import Optional, TypedDict
 import os
 import sys
 import time
+from time import sleep
+from random import uniform
+
+from spotapi import Public
+from innertube import InnerTube
+from yt_dlp import YoutubeDL
 
 # Import from utility modules
 from spotify_utils import get_playlist_info
@@ -10,6 +16,7 @@ from downloader import download_from_urls, DownloadStats
 
 # Global variables
 DOWNLOAD_PATH = "./downloads/" # ends with "/"
+
 client = None
 FFMPEG_PATH = None  # Will store custom FFmpeg path if provided
 
