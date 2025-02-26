@@ -107,6 +107,40 @@ ffmpeg -version
 
 > **Note:** If FFmpeg is not installed, the application will still download audio files but will skip the conversion to M4A format and leave them as webm files. The GUI now allows you to specify a custom FFmpeg path if automatic detection fails.
 
+## Recent Improvements
+
+### Code Quality and Error Handling
+- **Improved Error Handling**: Added robust error handling throughout the application
+  - Graceful handling of invalid playlist IDs
+  - Better error reporting for search failures
+  - Proper handling of invalid timestamp formats
+  - Thread-safe error reporting in concurrent operations
+
+### Download Path Management
+- **Consistent Download Path Handling**: Fixed inconsistent download path management across modules
+  - Properly set and propagate download paths between modules
+  - Automatic creation of download directories if they don't exist
+  - Standardized path separator handling for cross-platform compatibility
+
+### Performance Optimizations
+- **Search Result Processing**: Improved YouTube Music search result processing
+  - Added match quality calculation (0-100%) for better song matching
+  - More robust extraction of video metadata
+  - Better handling of search failures
+- **Empty List Handling**: Added proper handling for empty playlists and search results
+
+### FFmpeg Integration
+- **Improved FFmpeg Path Handling**: Better detection and usage of FFmpeg
+  - Custom FFmpeg path properly passed between modules
+  - Clear error messages when FFmpeg is not found
+  - Support for FFmpeg path specification in both GUI and CLI
+
+### CLI Improvements
+- **Enhanced Command Line Interface**: Better error handling and feedback in CLI mode
+  - Improved argument parsing
+  - Better progress reporting
+  - Automatic download directory creation
+
 ## Usage
 
 ### GUI Mode (Recommended)

@@ -1,7 +1,8 @@
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 import threading
-from main import get_playlist_info, get_song_urls, download_from_urls, DOWNLOAD_PATH as MAIN_DOWNLOAD_PATH
+import main
+from main import get_playlist_info, get_song_urls, download_from_urls
 import re
 from pathlib import Path
 import sys
@@ -416,15 +417,11 @@ class ModernSpotifyDownloader(ctk.CTk):
     
     def download_playlist(self, url):
         try:
-            global MAIN_DOWNLOAD_PATH
-            original_path = MAIN_DOWNLOAD_PATH
+            original_path = main.DOWNLOAD_PATH
             
             if not self.download_path.endswith(os.sep):
                 self.download_path += os.sep
                 
-            MAIN_DOWNLOAD_PATH = self.download_path
-            
-            import main
             main.DOWNLOAD_PATH = self.download_path
             
             # Set FFmpeg path if provided
@@ -437,7 +434,7 @@ class ModernSpotifyDownloader(ctk.CTk):
             playlist_id = self.extract_playlist_id(url)
             
             self.update_progress(0, "Fetching playlist information...")
-            playlist_info = get_playlist_info(playlist_id)
+            playlist_info = main.get_playlist_info(playlist_id)
             
             if not playlist_info:
                 raise Exception("Could not fetch playlist information")
@@ -446,7 +443,7 @@ class ModernSpotifyDownloader(ctk.CTk):
             self.update_progress(10, f"Found {self.total_songs} songs in playlist")
             
             self.update_progress(20, "Finding songs on YouTube Music...")
-            song_urls = get_song_urls(playlist_info, 
+            song_urls = main.get_song_urls(playlist_info, 
                                     lambda detail, progress, stats=None: self.update_progress(progress, "Finding songs...", detail, stats),
                                     self.concurrent_searches)
             
@@ -454,9 +451,11 @@ class ModernSpotifyDownloader(ctk.CTk):
                 raise Exception("No songs found in playlist")
             
             self.update_progress(40, f"Downloading {len(song_urls)} songs...")
-            download_stats = download_from_urls(song_urls,
+            download_stats = main.download_from_urls(song_urls,
                              lambda detail, progress, stats: self.update_progress(progress, "Downloading songs...", detail, stats),
-                             self.concurrent_downloads)
+                             self.concurrent_downloads,
+                             ffmpeg_path=main.FFMPEG_PATH,
+                             download_path=self.download_path)
             
             failed_message = ""
             if download_stats and download_stats.get("failed"):
@@ -488,8 +487,6 @@ class ModernSpotifyDownloader(ctk.CTk):
             messagebox.showerror("Error", str(e))
         
         finally:
-            MAIN_DOWNLOAD_PATH = original_path
-            import main
             main.DOWNLOAD_PATH = original_path
             
             self.download_button.configure(

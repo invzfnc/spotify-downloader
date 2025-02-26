@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+from typing import Optional, Callable
 from main import main
 
 def cli_progress_callback(message, progress, stats=None):
@@ -67,6 +68,11 @@ def parse_arguments():
         help="Number of concurrent downloads (default: 3)"
     )
     
+    parser.add_argument(
+        "-f", "--ffmpeg-path",
+        help="Custom path to FFmpeg executable"
+    )
+    
     return parser.parse_args()
 
 def main_cli():
@@ -80,10 +86,19 @@ def main_cli():
     
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
+        print(f"Created download directory: {download_dir}")
     
     # Set the download path in the main module
     import main as main_module
     main_module.DOWNLOAD_PATH = download_dir
+    
+    # Set FFmpeg path if provided
+    if args.ffmpeg_path:
+        if os.path.isfile(args.ffmpeg_path):
+            main_module.FFMPEG_PATH = args.ffmpeg_path
+            print(f"Using custom FFmpeg path: {args.ffmpeg_path}")
+        else:
+            print(f"Warning: Provided FFmpeg path does not exist: {args.ffmpeg_path}")
     
     print(f"Starting download from: {args.playlist_url}")
     print(f"Saving to: {download_dir}")
@@ -97,7 +112,9 @@ def main_cli():
             args.playlist_url, 
             cli_progress_callback, 
             args.concurrent_searches, 
-            args.concurrent_downloads
+            args.concurrent_downloads,
+            ffmpeg_path=main_module.FFMPEG_PATH,
+            download_path=main_module.DOWNLOAD_PATH
         )
         
         # Print summary
