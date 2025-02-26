@@ -4,6 +4,8 @@ from yt_dlp import YoutubeDL
 
 from time import sleep
 from random import uniform
+import concurrent.futures
+from threading import Lock
     
 DOWNLOAD_PATH = "./downloads/" # ends with "/"
 client = None
@@ -31,81 +33,392 @@ def convert_to_milliseconds(text):
     minutes, seconds = text.split(":")
     return (int(minutes) * 60 + int(seconds)) * 1000
     
-def get_song_url(song_info):
+def get_song_url(song_info, client=None):
     """Simulates searching from the YTMusic web and returns url to closest match."""
 
-    global client
     if client is None:
         client = InnerTube("WEB_REMIX", "1.20250203.01.00")
     data = client.search(f"{song_info['title']} {song_info['artist']}")
 
-    # handle "did you mean" case
-    if "itemSectionRenderer" in data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]:
-        del data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]
+    try:
+        contents = data.get("contents", {}).get("tabbedSearchResultsRenderer", {}).get("tabs", [{}])[0].get("tabRenderer", {}).get("content", {}).get("sectionListRenderer", {}).get("contents", [])
+        
+        if not contents:
+            raise ValueError("No search results found")
+            
+        # Find the first music item
+        music_item = None
+        video_id = None
+        video_title = None
+        
+        for item in contents:
+            # Check for musicCardShelfRenderer (top result)
+            if "musicCardShelfRenderer" in item:
+                renderer = item["musicCardShelfRenderer"]
+                if "title" in renderer and "runs" in renderer["title"]:
+                    run = renderer["title"]["runs"][0]
+                    if "navigationEndpoint" in run and "watchEndpoint" in run["navigationEndpoint"]:
+                        video_id = run["navigationEndpoint"]["watchEndpoint"]["videoId"]
+                        video_title = run["text"]
+                        break
+                        
+            # Check for musicShelfRenderer (list results)
+            elif "musicShelfRenderer" in item:
+                renderer = item["musicShelfRenderer"]
+                if "contents" in renderer and len(renderer["contents"]) > 0:
+                    first_item = renderer["contents"][0].get("musicResponsiveListItemRenderer", {})
+                    for column in first_item.get("flexColumns", []):
+                        col_renderer = column.get("musicResponsiveListItemFlexColumnRenderer", {})
+                        if "navigationEndpoint" in str(col_renderer):  # Quick way to check if this column has the video info
+                            for text in col_renderer.get("text", {}).get("runs", []):
+                                if "navigationEndpoint" in text and "watchEndpoint" in text["navigationEndpoint"]:
+                                    video_id = text["navigationEndpoint"]["watchEndpoint"]["videoId"]
+                                    video_title = text["text"]
+                                    break
+                            if video_id:
+                                break
+                if video_id:
+                    break
 
-    top_result_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["subtitle"]["runs"][-1]["text"]
-    first_song_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][1]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][-1]["text"]
+        if not video_id:
+            raise ValueError("Could not find video ID in search results")
 
-    top_result_diff = abs(convert_to_milliseconds(top_result_length) - song_info["length"])
-    first_song_diff = abs(convert_to_milliseconds(first_song_length) - song_info["length"])
+        url = f"https://music.youtube.com/watch?v={video_id}"
+        return url, video_title
 
-    if top_result_diff < first_song_diff:
-        # get top result url
-        video_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["navigationEndpoint"]["watchEndpoint"]["videoId"]
-        video_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["text"]
-    else:
-        # get first song result url
-        video_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["overlay"]["musicItemThumbnailOverlayRenderer"]["content"]["musicPlayButtonRenderer"]["playNavigationEndpoint"]["watchEndpoint"]["videoId"]
-        video_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][0]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][0]["text"]
+    except Exception as e:
+        print(f"Error processing search results: {str(e)}")
+        # Return a tuple to maintain compatibility
+        return None, None
 
-    url = "https://music.youtube.com/watch?v=" + video_id
-
-    return url, video_title
-
-def get_song_urls(playlist_info):
-    """Repeatedly calls get_song_url on given playlist info. Returns list of results."""
+def get_song_urls(playlist_info, progress_callback=None, concurrent_searches=3):
+    """Searches for songs in playlist concurrently and returns list of results."""
     urls = []
+    client = InnerTube("WEB_REMIX", "1.20250203.01.00")
+    total_songs = len(playlist_info)
     
-    for song_info in playlist_info:
-        print(f"Getting url for {song_info['title']}")
-        result = get_song_url(song_info)
-        urls.append(result[0])
-        print(f"{result[1]} ({result[0]})")
-        sleep(uniform(1, 3))
-
+    # Mutex for thread-safe updates to the progress
+    progress_lock = Lock()
+    completed_count = 0
+    
+    def search_song(index, song_info):
+        nonlocal completed_count
+        
+        # Update progress at start of search
+        with progress_lock:
+            if progress_callback:
+                progress_callback(f"Finding: {song_info['title']} by {song_info['artist']} ({index}/{total_songs})", 
+                                 20 + (completed_count / total_songs) * 20)
+        
+        # Small delay between API calls to avoid rate limiting (reduced from 1-3 seconds to 0.2-0.5 seconds)
+        sleep(uniform(0.2, 0.5))
+        
+        # Perform the search
+        result = get_song_url(song_info, client)
+        
+        # Process results and update progress
+        with progress_lock:
+            completed_count += 1
+            
+            if result[0]:  # Only add if we got a valid URL
+                urls.append({"url": result[0], "title": result[1], "original_title": song_info['title'], "artist": song_info['artist']})
+                if progress_callback:
+                    progress_callback(f"Found: {result[1]} ({index}/{total_songs})", 
+                                     20 + (completed_count / total_songs) * 20)
+            else:
+                if progress_callback:
+                    progress_callback(f"Skipped: Could not find {song_info['title']} ({index}/{total_songs})", 
+                                     20 + (completed_count / total_songs) * 20)
+        
+        return result[0] is not None
+    
+    # Execute searches concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrent_searches) as executor:
+        futures = {}
+        
+        # Submit all search tasks
+        for index, song_info in enumerate(playlist_info, 1):
+            future = executor.submit(search_song, index, song_info)
+            futures[future] = index
+        
+        # Wait for all searches to complete
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Error in search task: {str(e)}")
+                if progress_callback:
+                    with progress_lock:
+                        progress_callback(f"Error: {str(e)}", 20 + (completed_count / total_songs) * 20)
+    
     return urls
 
-def download_from_urls(urls):
-    """Downloads list of songs with yt-dlp"""
-
-    # options generated from https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py
-    options = {"extract_flat": "discard_in_playlist",
-         "final_ext": "m4a",
-         "format": "bestaudio/best",
-         "fragment_retries": 10,
-         "ignoreerrors": "only_download",
-         "outtmpl": {"default": f"{DOWNLOAD_PATH}%(title)s.%(ext)s"},
-         "postprocessors": [{"key": "FFmpegExtractAudio",
-                             "nopostoverwrites": False,
-                             "preferredcodec": "m4a",
-                             "preferredquality": "5"},
-                            {"add_chapters": True,
-                             "add_infojson": 'if_exists',
-                             "add_metadata": True,
-                             "key": "FFmpegMetadata"},
-                            {"key": "FFmpegConcat",
-                             "only_multi_video": True,
-                             "when": "playlist"}],
-         'retries': 10}
-
-    # downloads stream with highest bitrate, then save them in m4a format
-    with YoutubeDL(options) as ydl:
-        ydl.download(urls)
+def download_from_urls(urls, progress_callback=None, concurrent_downloads=3):
+    """Downloads list of songs with yt-dlp with concurrent downloads support"""
     
-def main(playlist_id):
+    import concurrent.futures
+    import time
+    from collections import defaultdict
+    import os
+    import platform
+    from pathlib import Path
+    
+    # Track overall download stats
+    download_stats = {
+        "start_time": time.time(),
+        "total_bytes": 0,
+        "downloaded_bytes": 0,
+        "current_speed": 0,
+        "successful": [],
+        "failed": [],
+        "in_progress": set(),
+        "completed": 0
+    }
+    stats_lock = Lock()
+    
+    # Check if ffmpeg is available
+    ffmpeg_found = False
+    try:
+        import subprocess
+        if platform.system() == "Windows":
+            result = subprocess.run(["where", "ffmpeg"], capture_output=True, text=True)
+            ffmpeg_found = "ffmpeg" in result.stdout.lower()
+        else:  # Linux/Mac
+            result = subprocess.run(["which", "ffmpeg"], capture_output=True, text=True)
+            ffmpeg_found = bool(result.stdout.strip())
+    except Exception:
+        ffmpeg_found = False
+        
+    if not ffmpeg_found and progress_callback:
+        progress_callback(
+            "Warning: FFmpeg not found - audio conversion will be skipped", 
+            10,
+            download_stats
+        )
+    
+    class ProgressHook:
+        def __init__(self, callback, song_info, current_idx, total_songs):
+            self.callback = callback
+            self.current_title = ""
+            self.song_info = song_info
+            self.current_idx = current_idx
+            self.total_songs = total_songs
+            self.last_downloaded_bytes = 0
+            self.last_time = time.time()
+            self.error_reported = False
+            
+        def __call__(self, d):
+            with stats_lock:
+                if d['status'] == 'downloading':
+                    # Get title if not set
+                    if self.current_title != d.get('info_dict', {}).get('title', ''):
+                        self.current_title = d.get('info_dict', {}).get('title', '')
+                        download_stats["in_progress"].add(self.current_title)
+                    
+                    # Calculate download speed
+                    if "downloaded_bytes" in d and "total_bytes" in d:
+                        # Update total bytes if we have that info
+                        if d["total_bytes"] and self.current_title in download_stats["in_progress"]:
+                            download_stats["total_bytes"] = max(download_stats["total_bytes"], d["total_bytes"])
+                        
+                        # Calculate current speed for this file
+                        now = time.time()
+                        time_diff = now - self.last_time
+                        if time_diff >= 0.5:  # Update every half second
+                            bytes_diff = d["downloaded_bytes"] - self.last_downloaded_bytes
+                            current_speed = bytes_diff / time_diff if time_diff > 0 else 0
+                            
+                            # Update overall download stats
+                            download_stats["downloaded_bytes"] += bytes_diff
+                            download_stats["current_speed"] = current_speed
+                            
+                            # Reset for next calculation
+                            self.last_downloaded_bytes = d["downloaded_bytes"]
+                            self.last_time = now
+                    
+                    # Calculate progress percentage
+                    progress = d.get('downloaded_bytes', 0) / d.get('total_bytes', 1) * 100 if d.get('total_bytes') else 0
+                    
+                    # Calculate ETA
+                    elapsed = time.time() - download_stats["start_time"]
+                    completed_fraction = download_stats["completed"] / len(urls) if urls else 0
+                    if completed_fraction > 0:
+                        eta_seconds = (elapsed / completed_fraction) - elapsed
+                        eta_str = f" - ETA: {int(eta_seconds // 60)}m {int(eta_seconds % 60)}s"
+                    else:
+                        eta_str = " - Calculating..."
+                    
+                    # Format speed in Mbps
+                    speed_mbps = download_stats["current_speed"] / (1024 * 1024) * 8  # Convert bytes/s to Mbps
+                    speed_str = f" - {speed_mbps:.2f} Mbps"
+                    
+                    if self.callback:
+                        self.callback(
+                            f"Downloading: {self.current_title} ({self.current_idx}/{self.total_songs}){speed_str}{eta_str}", 
+                            min(40 + progress * 0.6, 100),
+                            download_stats
+                        )
+                
+                elif d['status'] == 'finished' and self.current_title:
+                    # Remove from in_progress and add to successful
+                    if self.current_title in download_stats["in_progress"]:
+                        download_stats["in_progress"].remove(self.current_title)
+                    download_stats["successful"].append(self.song_info)
+                    
+                    if self.callback:
+                        download_stats["completed"] += 1
+                        overall_progress = (download_stats["completed"] / len(urls)) * 100
+                        
+                        # Calculate ETA
+                        elapsed = time.time() - download_stats["start_time"]
+                        completed_fraction = download_stats["completed"] / len(urls) if urls else 0
+                        if completed_fraction > 0:
+                            eta_seconds = (elapsed / completed_fraction) - elapsed
+                            eta_str = f" - ETA: {int(eta_seconds // 60)}m {int(eta_seconds % 60)}s"
+                        else:
+                            eta_str = " - Calculating..."
+                            
+                        self.callback(
+                            f"Processing: {self.current_title} ({self.current_idx}/{self.total_songs}){eta_str}", 
+                            min(40 + overall_progress * 0.6, 100),
+                            download_stats
+                        )
+                        
+                elif d['status'] == 'error':
+                    # Track failed download and report only once
+                    if not self.error_reported:
+                        if self.current_title in download_stats["in_progress"]:
+                            download_stats["in_progress"].remove(self.current_title)
+                        download_stats["failed"].append(self.song_info)
+                        download_stats["completed"] += 1
+                        self.error_reported = True
+                        
+                        # Report the error (with detailed error message if available)
+                        error_msg = d.get('error', 'Unknown error')
+                        if self.callback:
+                            self.callback(
+                                f"Error: Could not download {self.song_info.get('title', 'Unknown')} - {error_msg}", 
+                                min(40 + (download_stats["completed"] / len(urls) if urls else 0) * 60, 100),
+                                download_stats
+                            )
+    
+    def download_song(song_data, idx, total):
+        try:
+            # Get the current download path from the global variable
+            current_download_path = DOWNLOAD_PATH
+            
+            # options generated from https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py
+            options = {
+                "extract_flat": "discard_in_playlist",
+                "final_ext": "m4a" if ffmpeg_found else "webm",  # Use webm if FFmpeg not available
+                "format": "bestaudio/best",
+                "fragment_retries": 10,
+                "ignoreerrors": "only_download",
+                "outtmpl": {"default": f"{current_download_path}%(title)s.%(ext)s"},
+                "postprocessors": [],  # Will be populated conditionally below
+                "quiet": False,  # Make yt-dlp show output
+                "no_warnings": False  # Show warnings
+            }
+            
+            # Only add postprocessors if ffmpeg is available
+            if ffmpeg_found:
+                options["postprocessors"] = [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "nopostoverwrites": False,
+                        "preferredcodec": "m4a",
+                        "preferredquality": "5"
+                    },
+                    {
+                        "add_chapters": True,
+                        "add_infojson": 'if_exists',
+                        "add_metadata": True,
+                        "key": "FFmpegMetadata"
+                    }
+                ]
+            
+            if progress_callback:
+                options["progress_hooks"] = [ProgressHook(progress_callback, song_data, idx, total)]
+            
+            with YoutubeDL(options) as ydl:
+                ydl.download([song_data["url"]])
+            return True
+        except Exception as e:
+            print(f"Error downloading {song_data.get('title', 'Unknown')}: {str(e)}")
+            with stats_lock:
+                download_stats["failed"].append(song_data)
+                download_stats["completed"] += 1
+            if progress_callback:
+                progress_callback(
+                    f"Error: Could not download {song_data.get('title', 'Unknown')} ({idx}/{total})", 
+                    min(40 + (download_stats["completed"] / len(urls) if urls else 0) * 60, 100),
+                    download_stats
+                )
+            return False
+    
+    total_songs = len(urls)
+    
+    # Use ThreadPoolExecutor for concurrent downloads
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrent_downloads) as executor:
+        futures = []
+        for idx, song_data in enumerate(urls, 1):
+            future = executor.submit(download_song, song_data, idx, total_songs)
+            futures.append(future)
+        
+        # Wait for all downloads to complete
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Unhandled exception: {str(e)}")
+    
+    # Return download stats for reporting
+    return download_stats
+
+def main(playlist_id, progress_callback=None, concurrent_searches=3, concurrent_downloads=3):
+    """Main function to handle the playlist download workflow
+    
+    Args:
+        playlist_id: Spotify playlist ID or URL
+        progress_callback: Optional callback function for progress updates
+        concurrent_searches: Number of concurrent song searches (default: 3)
+        concurrent_downloads: Number of concurrent downloads (default: 3)
+    
+    Returns:
+        Download statistics dictionary
+    """
+    # Extract playlist info
     playlist_info = get_playlist_info(playlist_id)
-    download_urls = get_song_urls(playlist_info)
-    download_from_urls(download_urls)
+    
+    # Get YouTube Music URLs for each song
+    download_urls = get_song_urls(playlist_info, progress_callback, 
+                                concurrent_searches=concurrent_searches)
+    
+    # Download songs from the URLs
+    download_stats = download_from_urls(download_urls, progress_callback,
+                                      concurrent_downloads=concurrent_downloads)
+    
+    # Print final stats
+    if progress_callback:
+        progress_callback(
+            f"Downloaded {len(download_stats['successful'])} songs, failed {len(download_stats['failed'])} songs",
+            100,
+            download_stats
+        )
+    
+    return download_stats
     
 if __name__ == "__main__":
-    main("https://open.spotify.com/playlist/2LE8ZObOZOqjsGrR6QFXwu?si=9b4a5deb005148e1") # test
+    import sys
+
+    def progress_callback(message, progress, stats=None):
+        """Simple command-line progress callback for testing"""
+        print(f"{progress:.1f}% - {message}")
+    
+    # For testing - use a test playlist
+    if len(sys.argv) > 1:
+        playlist_url = sys.argv[1]
+    else:
+        playlist_url = "https://open.spotify.com/playlist/2LE8ZObOZOqjsGrR6QFXwu?si=9b4a5deb005148e1"  # Test playlist
+    
+    main(playlist_url, progress_callback)
