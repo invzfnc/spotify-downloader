@@ -1,4 +1,4 @@
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Cha @github.com/invzfnc"
 
 from typing import TypedDict
@@ -23,9 +23,12 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
     """Extracts data from Spotify and return them in format
        `[{"title": title, "artist": artist, "length": length}]`."""
 
-    items = next(Public.playlist_info(playlist_id))["items"]
-
     result: list[PlaylistInfo] = []
+
+    try:
+        items = next(Public.playlist_info(playlist_id))["items"]
+    except KeyError:
+        return result
 
     for item in items:
         item = item["itemV2"]["data"]
@@ -103,9 +106,15 @@ def get_song_urls(playlist_info: list[PlaylistInfo]) -> list[str]:
 
     for song_info in playlist_info:
         print(f"Getting url for {song_info['title']}")
-        url, title = get_song_url(song_info)
+
+        try:
+            url, title = get_song_url(song_info)
+        except (KeyError, IndexError):
+            print(f"Fail in matching {song_info['title']}")
+
         urls.append(url)
-        print(f"{title} ({url})")
+        print(f"Matched {title} ({url})")
+
         sleep(uniform(1, 3))
 
     return urls
@@ -156,10 +165,14 @@ def download_from_urls(urls: list[str], output_dir: str) -> None:
 
 def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH) -> None:
     playlist_info = get_playlist_info(playlist_id)
+
+    if not playlist_info:
+        print("Invalid playlist URL. Aborting operation.")
+
     download_urls = get_song_urls(playlist_info)
     download_from_urls(download_urls, output_dir)
 
 
 if __name__ == "__main__":
     url = "https://open.spotify.com/playlist/2LE8ZObOZOqjsGrR6QFXwu?si=9b4a5deb005148e1"  # noqa: E501
-    main(url)  # test
+    # main(url)  # test
