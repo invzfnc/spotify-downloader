@@ -5,7 +5,7 @@ import sys
 import argparse
 import traceback
 
-from main import main
+from main import main, DOWNLOAD_PATH
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -22,8 +22,8 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument(
         "-o", "--output-dir",
-        default="./downloads/",
-        help="output directory for downloading songs (default: ./downloads)"
+        default=DOWNLOAD_PATH,
+        help=f"output directory for downloading songs (default: {DOWNLOAD_PATH})"  # noqa: E501
     )
 
     parser.add_argument(
