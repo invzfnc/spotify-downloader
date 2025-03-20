@@ -5,7 +5,8 @@ import sys
 import argparse
 import traceback
 
-from main import main, DOWNLOAD_PATH
+from main import main
+from main import DOWNLOAD_PATH, AUDIO_FORMAT
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -27,6 +28,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-f", "--audio-format",
+        default=AUDIO_FORMAT,
+        help=f"audio format for downloaded songs (default: {AUDIO_FORMAT})"
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"{__version__}",
@@ -42,7 +49,7 @@ if __name__ == "__main__":
     print(f"Starting download from {args.playlist_url} to {args.output_dir}")
 
     try:
-        main(args.playlist_url, args.output_dir)
+        main(args.playlist_url, args.output_dir, args.audio_format)
 
         print("Download completed.")
         sys.exit(0)

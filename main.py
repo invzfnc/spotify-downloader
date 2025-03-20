@@ -11,6 +11,8 @@ from innertube import InnerTube
 from yt_dlp import YoutubeDL
 
 DOWNLOAD_PATH = "./downloads/"
+AUDIO_FORMAT = "m4a"
+
 client = None
 
 
@@ -137,7 +139,8 @@ def get_song_urls(playlist_info: list[PlaylistInfo]) -> list[str]:
     return urls
 
 
-def download_from_urls(urls: list[str], output_dir: str) -> None:
+def download_from_urls(urls: list[str], output_dir: str,
+                       audio_format: str) -> None:
     """Downloads list of songs with yt-dlp"""
 
     if not output_dir.endswith("/"):
@@ -160,7 +163,7 @@ def download_from_urls(urls: list[str], output_dir: str) -> None:
                                    'when': 'before_dl'},
                                   {'key': 'FFmpegExtractAudio',
                                    'nopostoverwrites': False,
-                                   'preferredcodec': 'm4a',
+                                   'preferredcodec': audio_format,
                                    'preferredquality': '5'},
                                   {'add_chapters': True,
                                    'add_infojson': 'if_exists',
@@ -174,12 +177,13 @@ def download_from_urls(urls: list[str], output_dir: str) -> None:
                'retries': 10,
                'writethumbnail': True}
 
-    # downloads stream with highest bitrate, then save them in m4a format
+    # downloads stream with highest bitrate
     with YoutubeDL(options) as ydl:
         ydl.download(urls)
 
 
-def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH) -> None:
+def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
+         audio_format: str = AUDIO_FORMAT) -> None:
     playlist_info = get_playlist_info(playlist_id)
 
     if not playlist_info:
@@ -187,7 +191,7 @@ def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH) -> None:
         exit(0)
 
     download_urls = get_song_urls(playlist_info)
-    download_from_urls(download_urls, output_dir)
+    download_from_urls(download_urls, output_dir, audio_format)
 
 
 if __name__ == "__main__":
