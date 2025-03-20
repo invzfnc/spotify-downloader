@@ -47,6 +47,11 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
   spotify-dl.exe -o path playlist_url
   ```
 
+- To change download format (for example mp3):
+  ```sh
+  spotify-dl.exe -f mp3 playlist_url
+  ```
+
 ### Using Source Code
 1. Clone the repository.
 
@@ -88,7 +93,12 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
   python -m cli -o path playlist_url
   ```
 
-## Issues?
+- To change download format (for example mp3):
+  ```sh
+  python -m cli -f mp3 playlist_url
+  ```
+
+## Issues
 If you have encountered problems, please read the [guidelines](CONTRIBUTING.md#reporting-issuesasking-questions) for detailed instructions on how to open an issue.
 
 ## Contributing
