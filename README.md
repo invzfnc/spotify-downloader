@@ -6,6 +6,9 @@
   ### spotify-dl - Spotify Playlist Downloader
 
   Downloads Spotify playlists in high quality without logging in by searching for each track and downloading the best match from YouTube Music.
+
+  <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/v/release/invzfnc/spotify-downloader" alt="Latest release version"></a>
+  <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/downloads/invzfnc/spotify-downloader/total" alt="Total downloads"></a>
 </div> 
 
 ## Features
