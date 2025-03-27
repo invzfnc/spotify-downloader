@@ -1,0 +1,71 @@
+name: Issue Report
+description: Report a bug or an error.
+body:
+    - type: dropdown
+      id: build-type
+      attributes:
+        label: Build Type
+        description: Which type of build are you using?
+        options: 
+          - Binaries (.exe)
+          - Source code
+      validations:
+        required: true
+
+    - type: input
+      id: build-version
+      attributes:
+        label: Build Version
+        description: What version are you running?
+        placeholder: example, v1.x.x
+      validations:
+        required: true
+
+    - type: input
+      id: os
+      attributes:
+        label: Operating System
+        description: What platform are you on?
+        placeholder: example, Windows 10
+      validations:
+        required: true
+
+    - type: textarea
+      id: issue
+      attributes:
+        label: Issue Encountered
+        description: Briefly describe the issue you encountered and provide all relevant output, such as the traceback messages. Use suitable formatting (e.g., code blocks).
+      validations:
+        required: true
+
+    - type: textarea
+      id: steps-reproduce
+      attributes:
+        label: Steps to Reproduce
+        description: Please provide all relevant input values, such as playlist links. Use suitable formatting (e.g., code blocks).
+      validations:
+        required: true
+
+    - type: dropdown
+      id: can-run-python
+      attributes:
+        label: Ability to Run Python Source Code
+        description: Do you have the ability/environment set up to run Python source code? That way we can link you to the fixed version for testing without needing to compile. It's fine if you can't run the code, just let us know!
+        options:
+          - "Yes. I can test out the Python code with my setup."
+          - "No. I don't have the environment set up to run Python code."
+      validations:
+        required: true
+
+    - type: textarea
+      id: extras
+      attributes:
+        label: Extra Information (Optional)
+        description: Anything else?
+      validations:
+        required: false
+
+    - type: markdown
+      attributes:
+        value: |
+          Thank you for filling out this form. We will get back to you as soon as possible.
