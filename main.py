@@ -140,7 +140,7 @@ def get_song_urls(playlist_info: list[PlaylistInfo],
         else:
             print(f"Failed matching for {song_info['title']}")
 
-        sleep(uniform(1, 3))
+        sleep(uniform(1, 2.5))
 
         return url
 
