@@ -56,6 +56,7 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("Program terminated by user.")
+        sys.exit(0)
 
     except Exception:
         print(traceback.format_exc())
