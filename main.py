@@ -132,13 +132,13 @@ def get_song_urls(playlist_info: list[PlaylistInfo],
         Reports and prints status to user,
         returns matched url."""
 
-        print(f"Getting url for {song_info['title']}")
+        print(f"[MATCHING] {song_info['title']}")
         url, title = get_song_url(song_info)
 
         if url:
-            print(f"Matched {title} ({url})")
+            print(f"[FOUND] {title} ({url})")
         else:
-            print(f"Failed matching for {song_info['title']}")
+            print(f"[NO MATCH] {song_info['title']}")
 
         sleep(uniform(1, 2.5))
 
