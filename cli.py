@@ -37,7 +37,7 @@ def parse_arguments() -> argparse.Namespace:
        "-c", "--max-concurrent",
        default=CONCURRENT_LIMIT,
        type=int,
-       help=f"number of songs to process simultaneously (default: {CONCURRENT_LIMIT})"  # noqa: E501
+       help=f"number of songs to search simultaneously (default: {CONCURRENT_LIMIT})"  # noqa: E501
     )
 
     parser.add_argument(
