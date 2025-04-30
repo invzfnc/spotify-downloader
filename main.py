@@ -58,6 +58,10 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
         else:
             continue
 
+        # Remove duplicates
+        if song in result:
+            continue
+
         result.append(song)
 
     return result
