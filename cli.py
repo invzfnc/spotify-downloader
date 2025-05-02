@@ -34,6 +34,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--title-first",
+        action="store_true",
+        help='save as "<title> - <artist>.<ext>" instead of the default "<artist> - <title>.<ext>"'  # noqa: E501
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"{__version__}",
@@ -49,7 +55,8 @@ if __name__ == "__main__":
     print(f"Starting download from {args.playlist_url} to {args.output_dir}")
 
     try:
-        main(args.playlist_url, args.output_dir, args.audio_format)
+        main(args.playlist_url, args.output_dir,
+             args.audio_format, args.title_first)
 
         print("Download completed.")
         sys.exit(0)
