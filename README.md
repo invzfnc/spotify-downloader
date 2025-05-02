@@ -29,7 +29,7 @@ This program requires **ffmpeg** to work. Install [ffmpeg](https://ffmpeg.org/do
 Unlike most downloader, this program **does not** require a Spotify Developers account.
 
 ### Using Binaries (Windows Only)
-1. Download the latest binaries from the [release section](https://github.com/invzfnc/spotify-downloader/releases). Currently, this method supports only Windows.
+1. Download the latest binaries from the [release section](https://github.com/invzfnc/spotify-downloader/releases).
 2. Extract the files and navigate to the extracted folder.
 3. Open command prompt/terminal and run the program with your playlist URL.
 
@@ -50,9 +50,14 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
   spotify-dl.exe -o path playlist_url
   ```
 
-- To change download format (for example mp3):
+- To change audio format (for example mp3):
   ```sh
   spotify-dl.exe -f mp3 playlist_url
+  ```
+
+- To save as `<title> - <artist>.<ext>` instead of the default `<artist> - <title>.<ext>`:
+  ```sh
+  spotify-dl.exe --title-first playlist_url
   ```
 
 ### Using Source Code
@@ -96,9 +101,14 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
   python -m cli -o path playlist_url
   ```
 
-- To change download format (for example mp3):
+- To change audio format (for example mp3):
   ```sh
   python -m cli -f mp3 playlist_url
+  ```
+
+- To save as `<title> - <artist>.<ext>` instead of the default `<artist> - <title>.<ext>`:
+  ```sh
+  python -m cli --title-first playlist_url
   ```
 
 ## Issues
