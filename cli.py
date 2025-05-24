@@ -1,4 +1,4 @@
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 __author__ = "Cha @github.com/invzfnc"
 
 import sys
@@ -41,6 +41,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--title-first",
+        action="store_true",
+        help='save as "<title> - <artist>.<ext>" instead of the default "<artist> - <title>.<ext>"'  # noqa: E501
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"{__version__}",
@@ -61,7 +67,7 @@ if __name__ == "__main__":
 
     try:
         main(args.playlist_url, args.output_dir,
-             args.audio_format, args.max_concurrent)
+             args.audio_format, args.title_first, args.max_concurrent)
 
         print("Download completed.")
         sys.exit(0)

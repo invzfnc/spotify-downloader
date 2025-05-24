@@ -1,4 +1,4 @@
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 __author__ = "Cha @github.com/invzfnc"
 
 import concurrent.futures
@@ -59,6 +59,10 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
                 "length": int(item["localTrackDuration"]["totalMilliseconds"])
             }
         else:
+            continue
+
+        # Remove duplicates
+        if song in result:
             continue
 
         result.append(song)
@@ -163,11 +167,16 @@ def get_song_urls(playlist_info: list[PlaylistInfo],
 
 
 def download_from_urls(urls: list[str], output_dir: str,
-                       audio_format: str) -> None:
+                       audio_format: str, title_first: bool) -> None:
     """Downloads list of songs with yt-dlp"""
 
     if not output_dir.endswith("/"):
         output_dir += "/"
+
+    if title_first:
+        filename = f'{output_dir}%(title)s - %(creator)s.%(ext)s'
+    else:
+        filename = f'{output_dir}%(creator)s - %(title)s.%(ext)s'
 
     # options generated from https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py  # noqa: E501
     options = {'extract_flat': 'discard_in_playlist',
@@ -175,7 +184,7 @@ def download_from_urls(urls: list[str], output_dir: str,
                'format': 'bestaudio/best',
                'fragment_retries': 10,
                'ignoreerrors': 'only_download',
-               'outtmpl': {'default': f'{output_dir}%(title)s.%(ext)s',
+               'outtmpl': {'default': filename,
                            'pl_thumbnail': ''},
                'postprocessor_args': {'ffmpeg': ['-c:v',
                                                  'mjpeg',
@@ -207,6 +216,7 @@ def download_from_urls(urls: list[str], output_dir: str,
 
 def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
          audio_format: str = AUDIO_FORMAT,
+         title_first: bool = False,
          concurrent_limit: int = CONCURRENT_LIMIT) -> None:
     playlist_info = get_playlist_info(playlist_id)
 
@@ -215,7 +225,7 @@ def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
         exit(0)
 
     download_urls = get_song_urls(playlist_info, concurrent_limit)
-    download_from_urls(download_urls, output_dir, audio_format)
+    download_from_urls(download_urls, output_dir, audio_format, title_first)
 
 
 if __name__ == "__main__":
