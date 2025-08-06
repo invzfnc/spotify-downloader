@@ -19,7 +19,6 @@ CONCURRENT_LIMIT = 3
 
 client = None
 
-
 class PlaylistInfo(TypedDict):
     title: str
     artist: str
@@ -88,7 +87,7 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
 
     global client
     if client is None:
-        client = InnerTube("WEB_REMIX", "1.20250203.01.00")
+        client = InnerTube("WEB_REMIX", "1.20250804.03.00")
     data = client.search(f"{song_info['title']} {song_info['artist']}")
 
     # handle "did you mean" case
