@@ -160,7 +160,6 @@ def get_song_urls(playlist_info: list[PlaylistInfo],
     for batch in batches:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             # maintains order of urls with playlist entries
-            # required for future use (feature coming s∞n)
             urls.extend(executor.map(process_song_entry, batch))
         print()
 
@@ -175,12 +174,15 @@ def download_from_urls(urls: list[str], output_dir: str,
         output_dir += "/"
 
     if title_first:
-        filename = f'{output_dir}%(title)s - %(creator)s.%(ext)s'
+        filename = f"{output_dir}%(title)s - %(creator)s.%(ext)s"
     else:
-        filename = f'{output_dir}%(creator)s - %(title)s.%(ext)s'
+        filename = f"{output_dir}%(creator)s - %(title)s.%(ext)s"
 
-    # options generated from https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py  # noqa: E501
-    options = {'extract_flat': 'discard_in_playlist',
+    downloaded_ids = f"{output_dir}.downloaded_ids"
+
+    # options generated with https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py  # noqa: E501
+    options = {'download_archive': downloaded_ids,
+               'extract_flat': 'discard_in_playlist',
                'final_ext': 'm4a',
                'format': 'bestaudio/best',
                'fragment_retries': 10,
