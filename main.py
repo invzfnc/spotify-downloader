@@ -7,6 +7,7 @@ from typing import TypedDict
 from time import sleep
 from random import uniform
 from sys import exit
+from itertools import chain
 
 from spotapi import Public
 from innertube import InnerTube
@@ -32,7 +33,8 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
     result: list[PlaylistInfo] = []
 
     try:
-        items = next(Public.playlist_info(playlist_id))["items"]
+        chunks = list(Public.playlist_info(playlist_id))
+        items = list(chain.from_iterable([chunk["items"] for chunk in chunks]))
     except KeyError:
         return result
 
@@ -229,5 +231,5 @@ def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
 
 
 if __name__ == "__main__":
-    url = "https://open.spotify.com/playlist/22hvxfJq0KwpgulLhDGslq?si=621f90e597784a75"  # noqa: E501
+    url = "https://open.spotify.com/playlist/22hvxfJq0KwpgulLhDGslq"  # noqa: E501
     main(url)
