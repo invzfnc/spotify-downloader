@@ -1,6 +1,8 @@
 __version__ = "1.0.10"
 __author__ = "Cha @github.com/invzfnc"
 
+import concurrent.futures
+
 from typing import TypedDict
 from time import sleep
 from random import uniform
@@ -12,6 +14,7 @@ from yt_dlp import YoutubeDL
 
 DOWNLOAD_PATH = "./downloads/"
 AUDIO_FORMAT = "m4a"
+CONCURRENT_LIMIT = 3
 
 client = None
 
@@ -123,22 +126,42 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
         return ("", "")
 
 
-def get_song_urls(playlist_info: list[PlaylistInfo]) -> list[str]:
-    """Repeatedly calls get_song_url on given playlist info. Returns
-    list of results."""
-    urls = []
+def get_song_urls(playlist_info: list[PlaylistInfo],
+                  concurrent_limit: int) -> list[str]:
+    """Repeatedly calls `get_song_url` on given playlist info.
+    Returns list of results."""
 
-    for song_info in playlist_info:
-        print(f"Getting url for {song_info['title']}")
+    def process_song_entry(song_info: PlaylistInfo):
+        """Helper function for concurrency in `get_song_urls`.
+        Reports and prints status to user,
+        returns matched url."""
+
+        print(f"[MATCHING] {song_info['title']}")
         url, title = get_song_url(song_info)
 
         if url:
-            urls.append(url)
-            print(f"Matched {title} ({url})")
+            print(f"[FOUND] {title} ({url})")
         else:
-            print(f"Failed matching for {song_info['title']}")
+            print(f"[NO MATCH] {song_info['title']}")
 
-        sleep(uniform(1, 3))
+        sleep(uniform(1, 2.5))
+
+        return url
+
+    urls: list[str] = []
+
+    # split playlist_info into batches of (let's say) three
+    # spltting manually so program responds better to keyboard interruption
+    # program will end on ctrl-c once the batch is finished
+    batches = [playlist_info[i: i+concurrent_limit]
+               for i in range(0, len(playlist_info), concurrent_limit)]
+
+    for batch in batches:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            # maintains order of urls with playlist entries
+            # required for future use (feature coming s∞n)
+            urls.extend(executor.map(process_song_entry, batch))
+        print()
 
     return urls
 
@@ -192,17 +215,19 @@ def download_from_urls(urls: list[str], output_dir: str,
 
 
 def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
-         audio_format: str = AUDIO_FORMAT, title_first: bool = False) -> None:
+         audio_format: str = AUDIO_FORMAT,
+         title_first: bool = False,
+         concurrent_limit: int = CONCURRENT_LIMIT) -> None:
     playlist_info = get_playlist_info(playlist_id)
 
     if not playlist_info:
         print("Invalid playlist URL. Aborting operation.")
         exit(0)
 
-    download_urls = get_song_urls(playlist_info)
+    download_urls = get_song_urls(playlist_info, concurrent_limit)
     download_from_urls(download_urls, output_dir, audio_format, title_first)
 
 
 if __name__ == "__main__":
-    url = "https://open.spotify.com/playlist/2LE8ZObOZOqjsGrR6QFXwu?si=9b4a5deb005148e1"  # noqa: E501
-    main(url)  # test
+    url = "https://open.spotify.com/playlist/22hvxfJq0KwpgulLhDGslq?si=621f90e597784a75"  # noqa: E501
+    main(url)

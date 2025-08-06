@@ -6,7 +6,7 @@ import argparse
 import traceback
 
 from main import main
-from main import DOWNLOAD_PATH, AUDIO_FORMAT
+from main import DOWNLOAD_PATH, AUDIO_FORMAT, CONCURRENT_LIMIT
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -34,6 +34,13 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+       "-c", "--max-concurrent",
+       default=CONCURRENT_LIMIT,
+       type=int,
+       help=f"number of songs to search simultaneously (default: {CONCURRENT_LIMIT})"  # noqa: E501
+    )
+
+    parser.add_argument(
         "--title-first",
         action="store_true",
         help='save as "<title> - <artist>.<ext>" instead of the default "<artist> - <title>.<ext>"'  # noqa: E501
@@ -52,17 +59,22 @@ def parse_arguments() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_arguments()
 
+    if args.max_concurrent <= 0:
+        print("--max-concurrent should be integer larger than 1")
+        sys.exit(1)
+
     print(f"Starting download from {args.playlist_url} to {args.output_dir}")
 
     try:
         main(args.playlist_url, args.output_dir,
-             args.audio_format, args.title_first)
+             args.audio_format, args.title_first, args.max_concurrent)
 
         print("Download completed.")
         sys.exit(0)
 
     except KeyboardInterrupt:
         print("Program terminated by user.")
+        sys.exit(0)
 
     except Exception:
         print(traceback.format_exc())
