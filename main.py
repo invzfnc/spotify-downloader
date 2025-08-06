@@ -181,7 +181,8 @@ def download_from_urls(urls: list[str], output_dir: str,
     downloaded_ids = f"{output_dir}.downloaded_ids"
 
     # options generated with https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py  # noqa: E501
-    options = {'download_archive': downloaded_ids,
+    options = {'concurrent_fragment_downloads': 3,
+               'download_archive': downloaded_ids,
                'extract_flat': 'discard_in_playlist',
                'final_ext': 'm4a',
                'format': 'bestaudio/best',
