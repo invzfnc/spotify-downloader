@@ -5,8 +5,8 @@ import sys
 import argparse
 import traceback
 
-from main import main
-from main import DOWNLOAD_PATH, AUDIO_FORMAT, CONCURRENT_LIMIT
+from core import main
+from core import DOWNLOAD_PATH, AUDIO_FORMAT, CONCURRENT_LIMIT
 
 
 def parse_arguments() -> argparse.Namespace:

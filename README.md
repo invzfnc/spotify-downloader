@@ -97,40 +97,40 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
 4. Run the program with your playlist URL.
 
    ```sh
-   python -m cli playlist_url
+   python -m spotify-dl playlist_url
    ```
 
 **Available Options**
 - To get help on available options:
 
   ```sh
-  python -m cli --help
+  python -m spotify-dl --help
   ```
 
 - To specify where to store dowloaded files:
   ```sh
-  python -m cli -o path playlist_url
+  python -m spotify-dl -o path playlist_url
   ```
 
 - To change audio format (for example mp3):
   ```sh
-  python -m cli -f mp3 playlist_url
+  python -m spotify-dl -f mp3 playlist_url
   ```
 
 - To set how many songs are matched at the same time (default: 3. *P.S. There is no hard limit set, but please don't go wild*)
   ```sh
-  python -m cli -c 5 playlist_url
+  python -m spotify-dl -c 5 playlist_url
   ```
 
 - To enable yt-dlp's [`--download-archive`](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#video-selection) option
   > Download only videos not listed in the archive file. Record the IDs of all downloaded videos in it.
   ```sh
-  python -m cli --download_archive FILE playlist_url
+  python -m spotify-dl --download_archive FILE playlist_url
   ```
 
 - To save as `<title> - <artist>.<ext>` instead of the default `<artist> - <title>.<ext>`:
   ```sh
-  python -m cli --title-first playlist_url
+  python -m spotify-dl --title-first playlist_url
   ```
 
 ## Issues
