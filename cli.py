@@ -34,16 +34,16 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--title-first",
+        action="store_true",
+        help='save as "<title> - <artist>.<ext>" instead of the default "<artist> - <title>.<ext>"'  # noqa: E501
+    )
+
+    parser.add_argument(
        "-c", "--max-concurrent",
        default=CONCURRENT_LIMIT,
        type=int,
        help=f"number of songs to search simultaneously (default: {CONCURRENT_LIMIT})"  # noqa: E501
-    )
-
-    parser.add_argument(
-        "--title-first",
-        action="store_true",
-        help='save as "<title> - <artist>.<ext>" instead of the default "<artist> - <title>.<ext>"'  # noqa: E501
     )
 
     parser.add_argument(
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     if args.max_concurrent <= 0:
-        print("--max-concurrent should be integer larger than 1")
+        print("--max-concurrent should be an integer larger than 0")
         sys.exit(1)
 
     print(f"Starting download from {args.playlist_url} to {args.output_dir}")
@@ -88,5 +88,5 @@ if __name__ == "__main__":
 
     except Exception:
         print(traceback.format_exc())
-        print("If you'd like to report this issue, please include the message above when opening issues on GitHub. For detailed instructions, see CONTRIBUTING.md")  # noqa: E501
+        print("If you'd like to report this issue, please include the message above when opening issues on GitHub.")  # noqa: E501
         sys.exit(1)
