@@ -47,6 +47,15 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--download-archive",
+        action="store",
+        metavar="FILE",
+        type=str,
+        help="Passes --download-archive FILE to yt-dlp. \
+              Download only videos not listed in the archive file. \
+              Record the IDs of all downloaded videos in it.")
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"{__version__}",
@@ -67,7 +76,8 @@ if __name__ == "__main__":
 
     try:
         main(args.playlist_url, args.output_dir,
-             args.audio_format, args.title_first, args.max_concurrent)
+             args.audio_format, args.title_first,
+             args.max_concurrent, args.download_archive)
 
         print("Download completed.")
         sys.exit(0)

@@ -167,7 +167,8 @@ def get_song_urls(playlist_info: list[PlaylistInfo],
 
 
 def download_from_urls(urls: list[str], output_dir: str,
-                       audio_format: str, title_first: bool) -> None:
+                       audio_format: str, title_first: bool,
+                       download_archive: str | None) -> None:
     """Downloads list of songs with yt-dlp"""
 
     if not output_dir.endswith("/"):
@@ -178,11 +179,8 @@ def download_from_urls(urls: list[str], output_dir: str,
     else:
         filename = f"{output_dir}%(creator)s - %(title)s.%(ext)s"
 
-    downloaded_ids = f"{output_dir}.downloaded_ids"
-
     # options generated with https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py  # noqa: E501
     options = {'concurrent_fragment_downloads': 3,
-               'download_archive': downloaded_ids,
                'extract_flat': 'discard_in_playlist',
                'final_ext': 'm4a',
                'format': 'bestaudio/best',
@@ -213,15 +211,21 @@ def download_from_urls(urls: list[str], output_dir: str,
                'retries': 10,
                'writethumbnail': True}
 
+    # place in download folder
+    if download_archive:
+        options["download_archive"] = f"{output_dir}{download_archive}"
+
     # downloads stream with highest bitrate
     with YoutubeDL(options) as ydl:
         ydl.download(urls)
 
 
-def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
-         audio_format: str = AUDIO_FORMAT,
-         title_first: bool = False,
-         concurrent_limit: int = CONCURRENT_LIMIT) -> None:
+def main(playlist_id: str,
+         output_dir: str,
+         audio_format: str,
+         title_first: bool,
+         concurrent_limit: int,
+         download_archive: str | None) -> None:
     playlist_info = get_playlist_info(playlist_id)
 
     if not playlist_info:
@@ -229,7 +233,7 @@ def main(playlist_id: str, output_dir: str = DOWNLOAD_PATH,
         exit(0)
 
     download_urls = get_song_urls(playlist_info, concurrent_limit)
-    download_from_urls(download_urls, output_dir, audio_format, title_first)
+    download_from_urls(download_urls, output_dir, audio_format, title_first, download_archive)
 
 
 if __name__ == "__main__":
