@@ -5,7 +5,7 @@
 
   ### spotify-dl - Spotify Playlist Downloader
 
-  Downloads Spotify playlists in high quality without logging in by searching for each track and downloading the best match from YouTube Music.
+  Downloads Spotify playlists in high quality without login by matching each track and downloading it from YouTube Music.
 
   <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/v/release/invzfnc/spotify-downloader" alt="Latest release version"></a>
   <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/downloads/invzfnc/spotify-downloader/total" alt="Total downloads"></a>
@@ -15,7 +15,7 @@
 - No premium subscription required
 - No login required
 - Lightweight
-- Downloads in higher bitrate (around 256 kbps)
+- Downloads in higher bitrate (around 300 kbps)
 - With embed metadata (title, artist, album and album art, etc)
 
 ## Warning
@@ -53,6 +53,17 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
 - To change audio format (for example mp3):
   ```sh
   spotify-dl.exe -f mp3 playlist_url
+  ```
+
+- To set how many songs are matched at the same time (default: 3. *P.S. There is no hard limit set, but please don't go wild*)
+  ```sh
+  spotify-dl.exe -c 5 playlist_url
+  ```
+
+- To enable yt-dlp's [`--download-archive`](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#video-selection) option
+  > Download only videos not listed in the archive file. Record the IDs of all downloaded videos in it.
+  ```sh
+  spotify-dl.exe --download_archive FILE playlist_url
   ```
 
 - To save as `<title> - <artist>.<ext>` instead of the default `<artist> - <title>.<ext>`:
@@ -104,6 +115,17 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
 - To change audio format (for example mp3):
   ```sh
   python -m cli -f mp3 playlist_url
+  ```
+
+- To set how many songs are matched at the same time (default: 3. *P.S. There is no hard limit set, but please don't go wild*)
+  ```sh
+  python -m cli -c 5 playlist_url
+  ```
+
+- To enable yt-dlp's [`--download-archive`](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#video-selection) option
+  > Download only videos not listed in the archive file. Record the IDs of all downloaded videos in it.
+  ```sh
+  python -m cli --download_archive FILE playlist_url
   ```
 
 - To save as `<title> - <artist>.<ext>` instead of the default `<artist> - <title>.<ext>`:
