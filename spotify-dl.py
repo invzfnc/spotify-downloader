@@ -1,12 +1,12 @@
-__version__ = "1.0.10"
+__version__ = "1.1.0"
 __author__ = "Cha @github.com/invzfnc"
 
 import sys
 import argparse
 import traceback
 
-from main import main
-from main import DOWNLOAD_PATH, AUDIO_FORMAT
+from core import main
+from core import DOWNLOAD_PATH, AUDIO_FORMAT, CONCURRENT_LIMIT
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -40,6 +40,22 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+       "-c", "--max-concurrent",
+       default=CONCURRENT_LIMIT,
+       type=int,
+       help=f"number of songs to search simultaneously (default: {CONCURRENT_LIMIT})"  # noqa: E501
+    )
+
+    parser.add_argument(
+        "--download-archive",
+        action="store",
+        metavar="FILE",
+        type=str,
+        help="Passes --download-archive FILE to yt-dlp. \
+              Download only videos not listed in the archive file. \
+              Record the IDs of all downloaded videos in it.")
+
+    parser.add_argument(
         "--version",
         action="version",
         version=f"{__version__}",
@@ -52,19 +68,25 @@ def parse_arguments() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_arguments()
 
+    if args.max_concurrent <= 0:
+        print("--max-concurrent should be an integer larger than 0")
+        sys.exit(1)
+
     print(f"Starting download from {args.playlist_url} to {args.output_dir}")
 
     try:
         main(args.playlist_url, args.output_dir,
-             args.audio_format, args.title_first)
+             args.audio_format, args.title_first,
+             args.max_concurrent, args.download_archive)
 
         print("Download completed.")
         sys.exit(0)
 
     except KeyboardInterrupt:
         print("Program terminated by user.")
+        sys.exit(0)
 
     except Exception:
         print(traceback.format_exc())
-        print("If you'd like to report this issue, please include the message above when opening issues on GitHub. For detailed instructions, see CONTRIBUTING.md")  # noqa: E501
+        print("If you'd like to report this issue, please include the message above when opening issues on GitHub.")  # noqa: E501
         sys.exit(1)

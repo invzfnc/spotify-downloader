@@ -1,6 +1,6 @@
 # Contributing
 
-When contributing to this repository, please first discuss the change you wish to make via an issue with the owners before implementing the change. This ensures that the change aligns with the goals of the project before you begin working on it.
+Before contributing to this repository, please first discuss the change you wish to make via an issue. We want to make sure that your contribution aligns with the goals of the project before you begin working on it.
 
 ## Reporting Issues/Asking Questions
 > We assume that you have read the available documentation before reporting any issues or asking any questions.
@@ -17,7 +17,7 @@ We appreciate your help in improving the project and making the issue resolution
 
 ## How to Contribute Code
 1. Fork the repository.
-2. Create a new branch for your changes: `git checkout -b feature/feature name`.
+2. Create a new branch for your changes: `git checkout -b featurename`.
 3. Ensure your code complies with the existing style:
     - Passes `flake8` linting
     - Passes `mypy` type checking
@@ -28,22 +28,19 @@ We appreciate your help in improving the project and making the issue resolution
 
 ## Scope of Project
 - This project is focused solely on providing a tool to download music from Spotify playlists.
-- This project heavily follows the [KISS](https://en.wikipedia.org/wiki/KISS_principle) principle (Keep it simple, stupid) to make the code more understandable, manageable, and maintainable.
-- To avoid possible conflicts, below are the tasks currently in progress by the team for reference:
-    - Tests
-    - More robust error checking systems
+- This project aims to follow the [KISS](https://en.wikipedia.org/wiki/KISS_principle) principle (Keep it simple, stupid) to make the code more understandable, manageable, and maintainable.
+- Roadmap/TODO
     - Graphical user interface
-    - Support for embed album art
     - Logger
 
 ## Contribution Areas
 We welcome contribution in the following areas:
+- Minor incremental improvements: bug fixes or issues related to Spotify downloading functionality.
 - Documentation updates or improvements to make the project easier to understand and use.
 - Typo fixes in documentation.
-- Minor incremental improvements: bug fixes or issues related to Spotify downloading functionality.
 
 We are currently not accepting:
-- Changes that introduce features to download music from other services. (e.g. Apple Music, YouTube)
+- Changes that introduce features to download playlists from other services. (e.g. Apple Music, YouTube)
 - Major rewrites or redesigns of the architecture. We prefer incremental improvements that keep the project minimalistic.
 
 ## License
