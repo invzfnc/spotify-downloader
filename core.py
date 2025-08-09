@@ -41,8 +41,7 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
     for item in items:
         item = item["itemV2"]["data"]
 
-        assert item["__typename"] in ("Track", "LocalTrack",
-                                      "RestrictedContent", "NotFound")
+        assert item["__typename"] in ("Track", "LocalTrack", "RestrictedContent", "NotFound", "Episode"), f"typename is {item['__typename']}"  # noqa: E501
         # RestrictedContent and NotFound:
         # Hidden entries, not actual songs in playlist
 
