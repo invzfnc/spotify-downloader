@@ -25,4 +25,4 @@ typing_extensions==4.14.1
 urllib3==2.5.0
 validators==0.35.0
 websockets==15.0.1
-yt-dlp==2025.7.21
+yt-dlp==2025.8.11
