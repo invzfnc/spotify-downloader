@@ -1,4 +1,6 @@
 anyio==4.9.0
+beautifulsoup4==4.13.5
+bs4==0.0.2
 certifi==2025.7.9
 charset-normalizer==3.4.2
 colorama==0.4.6
@@ -19,10 +21,11 @@ requests==2.32.4
 rfc3986==1.5.0
 roster==0.1.11
 sniffio==1.3.1
-spotapi @ git+https://github.com/daMatz/SpotAPI.git@c7ce4fdc805e2cdb9d8806017f3546203294d08f
+soupsieve==2.8
+spotapi==1.2.3
 tls-client==1.0.1
 typing_extensions==4.14.1
 urllib3==2.5.0
 validators==0.35.0
 websockets==15.0.1
-yt-dlp==2025.8.22
+yt-dlp==2025.9.5
