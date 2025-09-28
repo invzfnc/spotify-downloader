@@ -7,6 +7,8 @@
 
   Downloads Spotify playlists in high quality without login by matching each track and downloading it from YouTube Music.
 
+  [YouTube video](https://youtu.be/xHsE06ov59A) demonstrating usage (binaries)
+
   <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/v/release/invzfnc/spotify-downloader" alt="Latest release version"></a>
   <a href="https://github.com/invzfnc/spotify-downloader/releases"><img src="https://img.shields.io/github/downloads/invzfnc/spotify-downloader/total" alt="Total downloads"></a>
 </div> 
