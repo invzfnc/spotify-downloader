@@ -1,4 +1,4 @@
-__version__ = "1.1.7"
+__version__ = "1.1.8"
 __author__ = "Cha @github.com/invzfnc"
 
 import sys

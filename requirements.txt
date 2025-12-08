@@ -5,7 +5,7 @@ certifi==2025.7.9
 charset-normalizer==3.4.2
 colorama==0.4.6
 dnspython==2.7.0
-h11==0.14.0
+h11==0.16.0
 httpcore==0.16.3
 httpx==0.23.3
 idna==3.10
@@ -25,7 +25,7 @@ soupsieve==2.8
 spotapi==1.2.5
 tls-client==1.0.1
 typing_extensions==4.14.1
-urllib3==2.5.0
+urllib3==2.6.0
 validators==0.35.0
 websockets==15.0.1
-yt-dlp==2025.11.12
+yt-dlp==2025.12.8
