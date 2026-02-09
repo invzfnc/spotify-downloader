@@ -9,7 +9,6 @@ h11==0.16.0
 httpcore==0.16.3
 httpx==0.23.3
 idna==3.10
-innertube==2.1.19
 mediate==0.1.8
 mutagen==1.47.0
 pillow==11.3.0
@@ -29,3 +28,4 @@ urllib3==2.6.0
 validators==0.35.0
 websockets==15.0.1
 yt-dlp==2026.2.4
+ytmusicapi==1.11.5
