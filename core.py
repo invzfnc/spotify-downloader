@@ -84,12 +84,13 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
 
     # ignore top results and match entries from Song category
     songs = [entry for entry in data if entry["resultType"] == "song"]
-    exact_matches = [song for song in songs if song["title"] == song_info["title"]]
-    # in this case it exactly matches the title only
+    matches = [song for song in songs if song_info["title"] in song["title"]]
+    # in the most ideal cases the titles are exactly the same,
+    # but sometimes ytmusic has longer titles containing translations for non english songs
 
-    if exact_matches:
-        exact_match = exact_matches[0]
-        return url_part + exact_match["videoId"], exact_match["title"]
+    if matches:
+        match = matches[0]
+        return url_part + match["videoId"], match["title"]
 
     # if there is no Song result that exactly matches the given info, return top result
     top_result = data[0]
