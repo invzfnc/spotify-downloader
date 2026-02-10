@@ -1,4 +1,4 @@
-__version__ = "1.1.9"
+__version__ = "1.2.0"
 __author__ = "Cha @github.com/invzfnc"
 
 import concurrent.futures
@@ -10,8 +10,8 @@ from sys import exit
 from itertools import chain
 
 from spotapi import Public
-from innertube import InnerTube
 from yt_dlp import YoutubeDL
+from ytmusicapi import YTMusic
 
 DOWNLOAD_PATH = "./downloads/"
 AUDIO_FORMAT = "m4a"
@@ -23,12 +23,11 @@ client = None
 class PlaylistInfo(TypedDict):
     title: str
     artist: str
-    length: int
 
 
 def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
     """Extracts data from Spotify and return them in format
-       `[{"title": title, "artist": artist, "length": length}]`."""
+       `[{"title": title, "artist": artist}]`."""
 
     result: list[PlaylistInfo] = []
 
@@ -51,13 +50,11 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
             song = {
                 "title": item["name"],
                 "artist": item["artists"]["items"][0]["profile"]["name"],
-                "length": int(item["trackDuration"]["totalMilliseconds"])
             }
         elif item["__typename"] == "LocalTrack":
             song = {
                 "title": item["name"],
                 "artist": item["artistName"],
-                "length": int(item["localTrackDuration"]["totalMilliseconds"])
             }
         else:
             continue
@@ -71,60 +68,38 @@ def get_playlist_info(playlist_id: str) -> list[PlaylistInfo]:
     return result
 
 
-def convert_to_milliseconds(text: str) -> int:
-    """Converts `"%M:%S"` timestamp from YTMusic to milliseconds."""
-    try:
-        minutes, seconds = text.split(":")
-    except ValueError:  # text is not duration
-        return 0
-
-    return (int(minutes) * 60 + int(seconds)) * 1000
-
-
 def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
     """Simulates searching from the YTMusic web and returns url to the
     closest match."""
 
+    # setup client
     global client
     if client is None:
-        client = InnerTube("WEB_REMIX", "1.20250804.03.00")
+        client = YTMusic()
     data = client.search(f"{song_info['title']} {song_info['artist']}")
-
-    # handle "did you mean" case
-    if "itemSectionRenderer" in data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]:  # noqa: E501
-        del data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]  # noqa: E501
-
-    # get first song result info, will succeed unless case is too extreme
-    try:
-        first_song_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["overlay"]["musicItemThumbnailOverlayRenderer"]["content"]["musicPlayButtonRenderer"]["playNavigationEndpoint"]["watchEndpoint"]["videoId"]  # noqa: E501
-        first_song_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][0]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][0]["text"]  # noqa: E501
-        first_song_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][1]["musicShelfRenderer"]["contents"][0]["musicResponsiveListItemRenderer"]["flexColumns"][1]["musicResponsiveListItemFlexColumnRenderer"]["text"]["runs"][-1]["text"]  # noqa: E501
-        first_song_diff = abs(convert_to_milliseconds(first_song_length) - song_info["length"])  # noqa: E501
-    except (KeyError, IndexError):
-        first_song_length = 0
-
-    # get top result info, fails if it's neither Song nor Video
-    try:
-        top_result_id = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["navigationEndpoint"]["watchEndpoint"]["videoId"]  # noqa: E501
-        top_result_title = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["title"]["runs"][0]["text"]  # noqa: E501
-        top_result_length = data["contents"]["tabbedSearchResultsRenderer"]["tabs"][0]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["musicCardShelfRenderer"]["subtitle"]["runs"][-1]["text"]  # noqa: E501
-        top_result_diff = abs(convert_to_milliseconds(top_result_length) - song_info["length"])  # noqa: E501
-    except (KeyError, IndexError):
-        top_result_length = 0
 
     url_part = "https://music.youtube.com/watch?v="
 
-    if first_song_length and top_result_length:
-        if top_result_diff < first_song_diff:
-            return url_part + top_result_id, top_result_title
-        else:
-            return url_part + first_song_id, first_song_title
-    elif top_result_length:
-        return url_part + top_result_id, top_result_title
-    elif first_song_length:
-        return url_part + first_song_id, first_song_title
-    else:
-        return ("", "")
+    # observe: will "did you mean" interrupt the flow?
+
+    # ignore top results and match entries from Song category
+    songs = [entry for entry in data if entry["resultType"] == "song"]
+    matches = [song for song in songs if song_info["title"] in song["title"]]
+    # in the most ideal cases the titles are exactly the same,
+    # but sometimes ytmusic has longer titles containing translations for non english songs
+
+    if matches:
+        match = matches[0]
+        return url_part + match["videoId"], match["title"]
+
+    # if there is no Song result that exactly matches the given info, return top result
+    top_result = data[0]
+    return url_part + top_result["videoId"], top_result["title"]
+
+    # no error handling for now, will add if have new observations
+    # also removed the part where the original algorithm returns ("", "")
+    # ideally in the worst case this function returns the top result
+    # unless even the top result is absent, then we'll see what to do
 
 
 def get_song_urls(playlist_info: list[PlaylistInfo],
