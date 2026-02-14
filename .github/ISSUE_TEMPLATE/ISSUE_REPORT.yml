@@ -1,5 +1,5 @@
 name: Issue Report
-description: Report a bug or an error.
+description: Report a bug or an error with our template.
 body:
     - type: dropdown
       id: build-type
@@ -42,9 +42,17 @@ body:
       id: steps-reproduce
       attributes:
         label: Steps to Reproduce
-        description: Please provide all relevant input values, such as playlist links. Use suitable formatting (e.g., code blocks).
+        description: What is your command line input? How did you run the program?
       validations:
         required: true
+
+    - type: textarea
+      id: playlist-url
+      attributes:
+        label: Playlist URL
+        description: What playlist are you trying to download? We highly encourage you to fill this out because we need this to reproduce the error.
+      validations:
+        required: false
 
     - type: dropdown
       id: can-run-python
@@ -68,4 +76,4 @@ body:
     - type: markdown
       attributes:
         value: |
-          Thank you for filling out this form. We will get back to you as soon as possible.
+          Thanks for filling this out! We'll get back to you as soon as possible.
