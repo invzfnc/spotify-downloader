@@ -92,9 +92,10 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
         match = matches[0]
         return url_part + match["videoId"], match["title"]
 
-    # if there is no Song result that exactly matches the given info, return top result
-    top_result = data[0]
-    return url_part + top_result["videoId"], top_result["title"]
+    # if there is no Song result that exactly matches the given info, return first Song or Video
+    # removed top result because top result can sometimes contain albums
+    streams = [entry for entry in data if entry["resultType"] in ("song", "video")]
+    return url_part + streams[0]["videoId"], streams[0]["title"]
 
     # no error handling for now, will add if have new observations
     # also removed the part where the original algorithm returns ("", "")
@@ -214,4 +215,4 @@ def main(playlist_id: str,
 
 if __name__ == "__main__":
     url = "https://open.spotify.com/playlist/22hvxfJq0KwpgulLhDGslq"
-    main(url, DOWNLOAD_PATH, AUDIO_FORMAT, False, CONCURRENT_LIMIT, ".archive")
+    #main(url, DOWNLOAD_PATH, AUDIO_FORMAT, False, CONCURRENT_LIMIT, ".archive")
