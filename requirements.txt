@@ -18,5 +18,5 @@ typing_extensions==4.15.0
 urllib3==2.6.3
 validators==0.35.0
 websockets==16.0
-yt-dlp==2026.2.4
+yt-dlp==2026.2.21
 ytmusicapi==1.11.5
