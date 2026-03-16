@@ -1,4 +1,4 @@
-__version__ = "1.2.0"
+__version__ = "1.2.2"
 __author__ = "Cha @github.com/invzfnc"
 
 import concurrent.futures
