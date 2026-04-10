@@ -81,22 +81,33 @@ Unlike most downloader, this program **does not** require a Spotify Developers a
    cd spotify-downloader
    ```
    
-2. Create and activate a virtual environment (Optional but recommended).
-
+2. Create and activate a virtual environment (Optional but recommended), then install required dependencies.
+   
    ```sh
-   python -m venv venv
-   venv\Scripts\activate.bat  # Windows
-   # or
-   source venv/bin/activate   # Linux/macOS
+   # using uv
+   uv sync
+
+   # Windows
+   .venv\Scripts\activate
+
+   # Linux/MacOS
+   source .venv/bin/activate
    ```
    
-3. Install required dependencies.
-
    ```sh
+   # using pip
+   python -m venv venv
+
+   # Windows
+   venv\Scripts\activate.bat
+
+   # Linux/MacOS
+   source venv/bin/activate
+
    python -m pip install -r requirements.txt
    ```
-   
-4. Run the program with your playlist URL.
+
+3. Run the program with your playlist URL.
 
    ```sh
    python -m spotify-dl playlist_url
