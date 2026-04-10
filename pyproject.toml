@@ -1,0 +1,25 @@
+[project]
+name = "spotify-dl"
+version = "1.3.0"
+description = "Downloads Spotify playlists in high quality without login"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mutagen>=1.47.0",
+    "pymongo>=4.16.0",
+    "redis>=7.3.0",
+    "spotapi>=1.2.7",
+    "websockets>=16.0",
+    "yt-dlp>=2026.3.17",
+    "ytmusicapi>=1.11.5",
+]
+
+[project.urls]
+Source = "https://github.com/invzfnc/spotify-downloader"
+Guide = "https://youtu.be/xHsE06ov59A"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.19.0",
+]
+
