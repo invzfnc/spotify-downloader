@@ -2,9 +2,12 @@ __pycache__/
 .mypy_cache/
 
 venv/
+.venv/
 
 build/
 dist/
+
+*.swp
 
 downloads/
 ignore/
