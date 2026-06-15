@@ -9,6 +9,7 @@ dependencies = [
     "pymongo>=4.16.0",
     "redis>=7.3.0",
     "spotapi>=1.2.7",
+    "tls-client>=1.0.1",
     "websockets>=16.0",
     "yt-dlp>=2026.3.17",
     "ytmusicapi>=1.11.5",

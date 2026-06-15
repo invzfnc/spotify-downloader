@@ -1,4 +1,4 @@
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 __author__ = "Cha @github.com/invzfnc"
 
 import concurrent.futures
@@ -215,4 +215,4 @@ def main(playlist_id: str,
 
 if __name__ == "__main__":
     url = "https://open.spotify.com/playlist/22hvxfJq0KwpgulLhDGslq"
-    #main(url, DOWNLOAD_PATH, AUDIO_FORMAT, False, CONCURRENT_LIMIT, ".archive")
+    main(url, DOWNLOAD_PATH, AUDIO_FORMAT, False, CONCURRENT_LIMIT, ".archive")
