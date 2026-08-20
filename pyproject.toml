@@ -1,6 +1,6 @@
 [project]
 name = "spotify-dl"
-version = "1.3.0"
+version = "1.3.2"
 description = "Downloads Spotify playlists in high quality without login"
 readme = "README.md"
 requires-python = ">=3.11"
