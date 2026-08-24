@@ -1,4 +1,4 @@
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 __author__ = "Cha @github.com/invzfnc"
 
 import concurrent.futures
@@ -78,6 +78,16 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
         client = YTMusic()
     data = client.search(f"{song_info['title']} {song_info['artist']}")
 
+    # case where there are absolutely no results ("no results for... try different keyword")
+    if not data:
+        # search only using title. opt for less specific searching
+        data = client.search(f"{song_info['title']}")
+
+    
+    # worst case, still nothing. just give up.
+    if not data:
+        return ("", "")
+
     url_part = "https://music.youtube.com/watch?v="
 
     # observe: will "did you mean" interrupt the flow?
@@ -96,11 +106,6 @@ def get_song_url(song_info: PlaylistInfo) -> tuple[str, str]:
     # removed top result because top result can sometimes contain albums
     streams = [entry for entry in data if entry["resultType"] in ("song", "video")]
     return url_part + streams[0]["videoId"], streams[0]["title"]
-
-    # no error handling for now, will add if have new observations
-    # also removed the part where the original algorithm returns ("", "")
-    # ideally in the worst case this function returns the top result
-    # unless even the top result is absent, then we'll see what to do
 
 
 def get_song_urls(playlist_info: list[PlaylistInfo],
