@@ -5,7 +5,7 @@ body:
       id: build-type
       attributes:
         label: Build Type
-        description: Which type of build are you using?
+        description: Which are you using? .exe or the .py source files?
         options: 
           - Binaries (.exe)
           - Source code
@@ -16,7 +16,7 @@ body:
       id: build-version
       attributes:
         label: Build Version
-        description: What version are you running?
+        description: What version are you running? (do not put "latest" or your issue will be ignored)
         placeholder: example, v1.x.x
       validations:
         required: true
@@ -42,7 +42,7 @@ body:
       id: steps-reproduce
       attributes:
         label: Steps to Reproduce
-        description: What is your command line input? How did you run the program?
+        description: What arguments did you pass? How did you run the program?
       validations:
         required: true
 
@@ -50,7 +50,7 @@ body:
       id: playlist-url
       attributes:
         label: Playlist URL
-        description: What playlist are you trying to download? We highly encourage you to fill this out because we need this to reproduce the error.
+        description: What playlist are you trying to download? We need this to reproduce the error.
       validations:
         required: false
 
@@ -58,7 +58,7 @@ body:
       id: can-run-python
       attributes:
         label: Ability to Run Python Source Code
-        description: Do you have the ability/environment set up to run Python source code? That way we can link you to the fixed version for testing without needing to compile. It's fine if you can't run the code, just let us know!
+        description: Do you have the ability/environment set up to run Python source code? That way we can link you to the fixed version for testing without needing to compile.
         options:
           - "Yes. I can test out the Python code with my setup."
           - "No. I don't have the environment set up to run Python code."
@@ -72,8 +72,3 @@ body:
         description: Anything else?
       validations:
         required: false
-
-    - type: markdown
-      attributes:
-        value: |
-          Thanks for filling this out! We'll get back to you as soon as possible.
