@@ -153,7 +153,7 @@ If you have encountered problems, please read the [guidelines](CONTRIBUTING.md#r
 Contributions are welcome! If you'd like to contribute, please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on how to get started.
 
 ## Credits
-Icon designed by [exia098](https://www.artstation.com/exia098).
+Icon designed by [exia09](https://www.instagram.com/_exia09).
 
 ## License
 This software is licensed under the [MIT License](https://github.com/invzfnc/spotify-downloader/blob/main/LICENSE) © [Cha](https://github.com/invzfnc)
